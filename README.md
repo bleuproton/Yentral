@@ -65,6 +65,7 @@ docker run -p 3000:3000 --env-file .env <registry>/<app>:<tag>
 - Integrations: `GET /api/connectors`, `GET /api/connections`, `POST /api/connections`, `PUT /api/connections/[id]`, `POST /api/connections/[id]/test`.
 - Jobs: `GET /api/jobs`, `GET /api/jobs/[id]`, `POST /api/jobs/[id]/retry`, `POST /api/jobs/[id]/cancel`.
 - Support: `GET /api/tickets`, `POST /api/tickets`, `GET /api/tickets/[id]`, `POST /api/tickets/[id]/reply`, `POST /api/tickets/[id]/assign`.
+- Fulfillment: `GET/POST /api/v1/shipments`, `POST /api/v1/shipments/[id]/confirm`, `GET/POST /api/v1/returns`, `POST /api/v1/returns/[id]/receive`.
 
 ## State Check
 Run these to validate the setup:
@@ -81,6 +82,7 @@ pnpm db:check        # migration sanity (validate/status/diff + DB checks)
 - Inventory & variants: `npx tsx scripts/smoke_phase2.ts`
 - Channel mappings: `npx tsx scripts/smoke-phase3.ts`
 - Combined Phase2/3: `npm run smoke:phase2-3`
+- Fulfillment Phase4: `npm run smoke:phase4`
 
 ## Git Hooks (optional)
 - Pre-push: run `pnpm db:check` to ensure migrations and schema are in sync.

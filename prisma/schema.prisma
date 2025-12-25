@@ -81,55 +81,57 @@ enum ReturnStatus {
 }
 
 model Tenant {
-  id                    String       @id @default(cuid())
-  slug                  String       @unique
-  name                  String
-  stripeCustomerId      String?
-  stripeSubscriptionId  String?
-  createdAt             DateTime     @default(now())
-  updatedAt             DateTime     @updatedAt
-  memberships           Membership[]
-  products              Product[]
-  inventoryItems        InventoryItem[]
-  orders                Order[]
-  orderLines            OrderLine[]
-  pluginInstallations   PluginInstallation[]
-  jobs                  Job[]
-  tickets               Ticket[]
-  jobRuns               JobRun[]
-  organizations         Organization[]
-  legalEntities         LegalEntity[]
-  taxProfiles           TaxProfile[]
-  warehouses            Warehouse[]
-  auditEvents           AuditEvent[]
+  id                     String                  @id @default(cuid())
+  slug                   String                  @unique
+  name                   String
+  stripeCustomerId       String?
+  stripeSubscriptionId   String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  memberships            Membership[]
+  products               Product[]
+  inventoryItems         InventoryItem[]
+  orders                 Order[]
+  orderLines             OrderLine[]
+  pluginInstallations    PluginInstallation[]
+  jobs                   Job[]
+  tickets                Ticket[]
+  jobRuns                JobRun[]
+  organizations          Organization[]
+  legalEntities          LegalEntity[]
+  taxProfiles            TaxProfile[]
+  warehouses             Warehouse[]
+  auditEvents            AuditEvent[]
   integrationConnections IntegrationConnection[]
-  productVariants       ProductVariant[]
-  stockLedgers          StockLedger[]
-  stockSnapshots        StockSnapshot[]
-  stockReservations     StockReservation[]
-  warehouseMappings     WarehouseMapping[]
-  channelProducts       ChannelProduct[]
-  channelVariants       ChannelVariant[]
-  channelOrders         ChannelOrder[]
-  shipments             Shipment[]
-  returns               Return[]
+  productVariants        ProductVariant[]
+  stockLedgers           StockLedger[]
+  stockSnapshots         StockSnapshot[]
+  stockReservations      StockReservation[]
+  warehouseMappings      WarehouseMapping[]
+  channelProducts        ChannelProduct[]
+  channelVariants        ChannelVariant[]
+  channelOrders          ChannelOrder[]
+  shipments              Shipment[]
+  returns                Return[]
+  shipmentLines          ShipmentLine[]
+  returnLines            ReturnLine[]
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  name         String?
-  image        String?
-  password     String?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  accounts     Account[]
-  sessions     Session[]
-  memberships  Membership[]
-  orders       Order[]       @relation("UserOrders")
-  tickets      Ticket[]      @relation("TicketAuthor")
-  assignedTickets Ticket[]   @relation("TicketAssignee")
-  auditEvents  AuditEvent[]
+  id              String       @id @default(cuid())
+  email           String       @unique
+  name            String?
+  image           String?
+  password        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  memberships     Membership[]
+  orders          Order[]      @relation("UserOrders")
+  tickets         Ticket[]     @relation("TicketAuthor")
+  assignedTickets Ticket[]     @relation("TicketAssignee")
+  auditEvents     AuditEvent[]
 }
 
 model Membership {
@@ -159,7 +161,7 @@ model Account {
   id_token          String?
   session_state     String?
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -170,7 +172,7 @@ model Session {
   userId       String
   expires      DateTime
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerificationToken {
@@ -182,19 +184,19 @@ model VerificationToken {
 }
 
 model Product {
-  id          String         @id @default(cuid())
-  tenantId    String
-  sku         String
-  name        String
-  description String?
-  priceCents  Int
-  currency    String         @default("USD")
-  status      ProductStatus  @default(DRAFT)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  inventory   InventoryItem[]
-  orderLines  OrderLine[]
-  variants    ProductVariant[]
+  id              String           @id @default(cuid())
+  tenantId        String
+  sku             String
+  name            String
+  description     String?
+  priceCents      Int
+  currency        String           @default("USD")
+  status          ProductStatus    @default(DRAFT)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  inventory       InventoryItem[]
+  orderLines      OrderLine[]
+  variants        ProductVariant[]
   channelProducts ChannelProduct[]
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -204,39 +206,39 @@ model Product {
 }
 
 model ProductVariant {
-  id          String   @id @default(cuid())
-  tenantId    String
-  productId   String
-  sku         String
-  ean         String?
-  attributes  Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  tenantId   String
+  productId  String
+  sku        String
+  ean        String?
+  attributes Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
-  orderLines OrderLine[]
-  stockLedgers StockLedger[]
-  stockSnapshots StockSnapshot[]
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product           Product            @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+  orderLines        OrderLine[]
+  stockLedgers      StockLedger[]
+  stockSnapshots    StockSnapshot[]
   stockReservations StockReservation[]
-  channelVariants ChannelVariant[]
-  shipmentLines ShipmentLine[]
-  returnLines ReturnLine[]
+  channelVariants   ChannelVariant[]
+  shipmentLines     ShipmentLine[]
+  returnLines       ReturnLine[]
 
   @@unique([tenantId, sku])
-  @@index([tenantId, productId])
   @@unique([tenantId, id])
+  @@index([tenantId, productId])
 }
 
 model InventoryItem {
-  id          String   @id @default(cuid())
-  tenantId    String
-  productId   String
-  location    String?
-  quantity    Int      @default(0)
-  reserved    Int      @default(0)
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  tenantId  String
+  productId String
+  location  String?
+  quantity  Int      @default(0)
+  reserved  Int      @default(0)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
@@ -245,26 +247,26 @@ model InventoryItem {
 }
 
 model Order {
-  id          String       @id @default(cuid())
-  tenantId    String
-  userId      String?
-  orderNumber Int
-  status      OrderStatus  @default(PENDING)
-  currency    String       @default("USD")
-  totalCents  Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  lines       OrderLine[]
+  id            String         @id @default(cuid())
+  tenantId      String
+  userId        String?
+  orderNumber   Int
+  status        OrderStatus    @default(PENDING)
+  currency      String         @default("USD")
+  totalCents    Int
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lines         OrderLine[]
   channelOrders ChannelOrder[]
-  shipments   Shipment[]
-  returns     Return[]
+  shipments     Shipment[]
+  returns       Return[]
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User?  @relation("UserOrders", fields: [userId], references: [id])
 
   @@unique([tenantId, orderNumber])
-  @@index([tenantId, status])
   @@unique([tenantId, id])
+  @@index([tenantId, status])
 }
 
 model OrderLine {
@@ -277,17 +279,17 @@ model OrderLine {
   unitCents  Int
   totalCents Int
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order   Order   @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
-  product Product @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order   Order           @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+  product Product         @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Restrict)
   variant ProductVariant? @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
 
   stockReservations StockReservation[]
-  shipmentLines ShipmentLine[]
-  returnLines ReturnLine[]
+  shipmentLines     ShipmentLine[]
+  returnLines       ReturnLine[]
 
-  @@index([tenantId, orderId])
   @@unique([tenantId, id])
+  @@index([tenantId, orderId])
 }
 
 model Shipment {
@@ -304,11 +306,12 @@ model Shipment {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order     Order     @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
-  warehouse Warehouse @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order     Order          @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+  warehouse Warehouse      @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
   lines     ShipmentLine[]
 
+  @@unique([tenantId, id])
   @@index([tenantId, orderId])
 }
 
@@ -326,24 +329,27 @@ model ShipmentLine {
   orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Restrict)
   variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
 
+  @@unique([tenantId, id])
   @@index([tenantId, shipmentId])
 }
 
 model Return {
-  id          String       @id @default(cuid())
-  tenantId    String
-  orderId     String
-  status      ReturnStatus @default(REQUESTED)
-  reason      String?
-  receivedAt  DateTime?
-  meta        Json?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id         String       @id @default(cuid())
+  tenantId   String
+  orderId    String
+  status     ReturnStatus @default(REQUESTED)
+  reason     String?
+  receivedAt DateTime?
+  meta       Json?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  order  Order  @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order  Order        @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
   lines  ReturnLine[]
 
+  @@unique([tenantId, id])
+  @@unique([tenantId, orderId, id])
   @@index([tenantId, orderId])
 }
 
@@ -362,33 +368,34 @@ model ReturnLine {
   orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Restrict)
   variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
 
+  @@unique([tenantId, id])
   @@index([tenantId, returnId])
 }
 
 model Plugin {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  name        String
-  description String?
-  latestVersion String?
-  channel     String?
-  homepage    String?
-  configSchema Json?
-  isChannelPlugin Boolean @default(false)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  installations PluginInstallation[]
+  id              String               @id @default(cuid())
+  key             String               @unique
+  name            String
+  description     String?
+  latestVersion   String?
+  channel         String?
+  homepage        String?
+  configSchema    Json?
+  isChannelPlugin Boolean              @default(false)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  installations   PluginInstallation[]
 }
 
 model PluginInstallation {
-  id         String   @id @default(cuid())
-  tenantId   String
-  pluginId   String
-  version    String
-  enabled    Boolean  @default(true)
-  config     Json?
+  id          String   @id @default(cuid())
+  tenantId    String
+  pluginId    String
+  version     String
+  enabled     Boolean  @default(true)
+  config      Json?
   installedAt DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  updatedAt   DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   plugin Plugin @relation(fields: [pluginId], references: [id], onDelete: Cascade)
@@ -397,11 +404,11 @@ model PluginInstallation {
 }
 
 model Jurisdiction {
-  id          String  @id @default(cuid())
-  code        String  @unique
-  countryCode String
-  currency    String
-  timezone    String
+  id            String        @id @default(cuid())
+  code          String        @unique
+  countryCode   String
+  currency      String
+  timezone      String
   legalEntities LegalEntity[]
   taxProfiles   TaxProfile[]
 }
@@ -413,7 +420,7 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   legalEntities LegalEntity[]
 
   @@unique([tenantId, name])
@@ -466,33 +473,33 @@ model Warehouse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  stockLedgers    StockLedger[]
-  stockSnapshots  StockSnapshot[]
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockLedgers      StockLedger[]
+  stockSnapshots    StockSnapshot[]
   stockReservations StockReservation[]
   warehouseMappings WarehouseMapping[]
-  shipments        Shipment[]
+  shipments         Shipment[]
 
   @@unique([tenantId, code])
   @@unique([tenantId, id])
 }
 
 model StockLedger {
-  id          String      @id @default(cuid())
-  tenantId    String
-  warehouseId String
-  variantId   String
-  qtyDelta    Int
-  kind        StockLedgerKind
-  reason      String?
-  refType     String?
-  refId       String?
+  id            String          @id @default(cuid())
+  tenantId      String
+  warehouseId   String
+  variantId     String
+  qtyDelta      Int
+  kind          StockLedgerKind
+  reason        String?
+  refType       String?
+  refId         String?
   correlationId String?
-  createdAt   DateTime    @default(now())
+  createdAt     DateTime        @default(now())
 
-  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  warehouse Warehouse       @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Cascade)
-  variant   ProductVariant  @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Cascade)
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  warehouse Warehouse      @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Cascade)
 
   @@index([tenantId, warehouseId, variantId])
 }
@@ -516,35 +523,36 @@ model StockSnapshot {
 }
 
 model StockReservation {
-  id          String             @id @default(cuid())
+  id          String            @id @default(cuid())
   tenantId    String
   orderLineId String
   warehouseId String
   variantId   String
   qty         Int
-  status      ReservationStatus  @default(ACTIVE)
+  status      ReservationStatus @default(ACTIVE)
   dedupeKey   String?
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 
   tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  orderLine OrderLine      @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
-  warehouse Warehouse      @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Cascade)
+  warehouse Warehouse      @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Cascade)
+  variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Cascade)
 
+  @@unique([tenantId, dedupeKey])
+  @@unique([tenantId, id])
   @@index([tenantId, orderLineId])
   @@index([tenantId, warehouseId, variantId])
-  @@unique([tenantId, dedupeKey])
 }
 
 model Connector {
-  id          String         @id @default(cuid())
-  key         String         @unique
+  id          String        @id @default(cuid())
+  key         String        @unique
   name        String
   type        ConnectorType
   description String?
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   versions ConnectorVersion[]
 }
@@ -556,54 +564,54 @@ model ConnectorVersion {
   schema      Json?
   createdAt   DateTime @default(now())
 
-  connector Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  connector              Connector               @relation(fields: [connectorId], references: [id], onDelete: Cascade)
   integrationConnections IntegrationConnection[]
 
   @@unique([connectorId, version])
 }
 
 model Job {
-  id             String     @id @default(cuid())
-  tenantId       String
-  type           String
-  dedupeKey      String?
-  correlationId  String?
-  nextRunAt      DateTime?
-  priority       Int        @default(0)
-  status         JobStatus  @default(PENDING)
-  payload        Json
-  attempts       Int        @default(0)
-  maxAttempts    Int        @default(5)
-  scheduledAt    DateTime?
-  startedAt      DateTime?
-  finishedAt     DateTime?
-  lastError      String?
-  lockedAt       DateTime?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  id            String    @id @default(cuid())
+  tenantId      String
+  type          String
+  dedupeKey     String?
+  correlationId String?
+  nextRunAt     DateTime?
+  priority      Int       @default(0)
+  status        JobStatus @default(PENDING)
+  payload       Json
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(5)
+  scheduledAt   DateTime?
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  lastError     String?
+  lockedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   runs   JobRun[]
 
+  @@unique([tenantId, dedupeKey])
   @@index([status])
   @@index([tenantId])
   @@index([scheduledAt])
-  @@unique([tenantId, dedupeKey])
 }
 
 model Ticket {
-  id          String        @id @default(cuid())
-  tenantId    String
-  authorId    String
-  assigneeId  String?
-  title       String
-  description String
-  status      TicketStatus  @default(OPEN)
-  priority    Int           @default(3)
-  slaDueAt    DateTime?
+  id                String       @id @default(cuid())
+  tenantId          String
+  authorId          String
+  assigneeId        String?
+  title             String
+  description       String
+  status            TicketStatus @default(OPEN)
+  priority          Int          @default(3)
+  slaDueAt          DateTime?
   lastSlaNotifiedAt DateTime?
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   author   User   @relation("TicketAuthor", fields: [authorId], references: [id], onDelete: Cascade)
@@ -615,19 +623,19 @@ model Ticket {
 }
 
 model JobRun {
-  id           String     @id @default(cuid())
-  tenantId     String
-  jobId        String?
-  jobName      String
-  status       JobStatus  @default(PENDING)
-  startedAt    DateTime   @default(now())
-  finishedAt   DateTime?
-  attempts     Int        @default(0)
-  maxAttempts  Int        @default(5)
-  error        String?
-  meta         Json?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  id          String    @id @default(cuid())
+  tenantId    String
+  jobId       String?
+  jobName     String
+  status      JobStatus @default(PENDING)
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(5)
+  error       String?
+  meta        Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   job    Job?   @relation(fields: [jobId], references: [id], onDelete: SetNull)
@@ -653,28 +661,28 @@ model AuditEvent {
 }
 
 model IntegrationConnection {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   tenantId           String
   connectorVersionId String
   name               String?
   region             String?
-  status             String   @default("INACTIVE")
+  status             String    @default("INACTIVE")
   config             Json?
   lastSyncAt         DateTime?
   lastError          String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  connectorVersion ConnectorVersion  @relation(fields: [connectorVersionId], references: [id], onDelete: Cascade)
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connectorVersion  ConnectorVersion   @relation(fields: [connectorVersionId], references: [id], onDelete: Cascade)
   warehouseMappings WarehouseMapping[]
   channelProducts   ChannelProduct[]
   channelVariants   ChannelVariant[]
   channelOrders     ChannelOrder[]
 
+  @@unique([tenantId, id])
   @@index([tenantId, connectorVersionId])
   @@index([tenantId, status])
-  @@unique([tenantId, id])
 }
 
 model WarehouseMapping {
@@ -686,23 +694,23 @@ model WarehouseMapping {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  tenant      Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  connection  IntegrationConnection @relation(fields: [tenantId, connectionId], references: [tenantId, id], onDelete: Cascade)
-  warehouse   Warehouse             @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Cascade)
+  tenant     Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  connection IntegrationConnection @relation(fields: [tenantId, connectionId], references: [tenantId, id], onDelete: Cascade)
+  warehouse  Warehouse             @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Cascade)
 
   @@unique([tenantId, connectionId, externalLocationId])
   @@index([tenantId, warehouseId])
 }
 
 model ChannelProduct {
-  id            String   @id @default(cuid())
-  tenantId      String
-  connectionId  String
-  productId     String
-  externalId    String
-  raw           Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  tenantId     String
+  connectionId String
+  productId    String
+  externalId   String
+  raw          Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   tenant     Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   connection IntegrationConnection @relation(fields: [tenantId, connectionId], references: [tenantId, id], onDelete: Cascade)
@@ -713,16 +721,16 @@ model ChannelProduct {
 }
 
 model ChannelVariant {
-  id            String   @id @default(cuid())
-  tenantId      String
-  connectionId  String
-  variantId     String
-  externalId    String
-  asin          String?
-  externalSku   String?
-  raw           Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  tenantId     String
+  connectionId String
+  variantId    String
+  externalId   String
+  asin         String?
+  externalSku  String?
+  raw          Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   tenant     Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   connection IntegrationConnection @relation(fields: [tenantId, connectionId], references: [tenantId, id], onDelete: Cascade)

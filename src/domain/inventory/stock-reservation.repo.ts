@@ -30,10 +30,9 @@ export class StockReservationRepository {
   }
 
   updateStatus(tenantId: string, reservationId: string, status: ReservationStatus) {
-    return this.db.stockReservation.update({
-      where: { id: reservationId },
-      data: { status },
-      select: { id: true, status: true, qty: true, warehouseId: true, variantId: true }
+    return this.db.stockReservation.updateMany({
+      where: { id: reservationId, tenantId },
+      data: { status }
     });
   }
 
