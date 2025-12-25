@@ -14,6 +14,9 @@
     "db:deploy": "prisma migrate deploy",
     "db:verify": "node scripts/db/verify-migrations.js",
     "db:check": "tsx scripts/db/check-migrations.ts && tsx scripts/db/check-drift.ts",
+    "db:check:migrations": "node scripts/db-check-migrations.mjs",
+    "db:check:tenant": "node scripts/db-check-tenant-safety.mjs",
+    "db:check-all": "npm run db:validate && npm run db:status && npm run db:check:migrations && npm run db:check:tenant",
     "db:check-migrations": "node scripts/db/check-migrations.mjs",
     "db:migrate": "prisma migrate dev",
     "db:migrate:dev": "prisma migrate dev",
@@ -22,6 +25,7 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
+    "smoke:phase2-3": "node --loader tsx scripts/smoke-phase2-3.ts",
     "boss:worker": "PG_BOSS_WORKER=1 tsx scripts/boss-worker.ts",
     "db:status": "prisma migrate status",
     "db:validate": "prisma validate",
@@ -42,7 +46,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "stripe": "^16.1.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",

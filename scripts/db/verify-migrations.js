@@ -44,7 +44,10 @@ async function main() {
       const hasUnfinished = rowsFor.some((r) => !r.finished_at && !r.rolled_back_at);
       const hasRolled = rowsFor.some((r) => r.rolled_back_at);
 
-      if (!rowsFor.length) failures.push(`Missing migration in DB: ${name}`);
+      if (!rowsFor.length) {
+        failures.push(`Missing migration in DB: ${name}`);
+        return;
+      }
       if (!hasApplied) failures.push(`Migration not applied: ${name}`);
       if (hasUnfinished) failures.push(`Migration not finished: ${name}`);
       if (hasRolled && !hasApplied) failures.push(`Migration rolled back: ${name}`);

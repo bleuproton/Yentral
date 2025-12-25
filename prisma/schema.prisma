@@ -64,6 +64,22 @@ enum ReservationStatus {
   CONSUMED
 }
 
+enum ShipmentStatus {
+  CREATED
+  LABEL_PURCHASED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  RECEIVED
+  REFUNDED
+  REJECTED
+}
+
 model Tenant {
   id                    String       @id @default(cuid())
   slug                  String       @unique
@@ -95,6 +111,8 @@ model Tenant {
   channelProducts       ChannelProduct[]
   channelVariants       ChannelVariant[]
   channelOrders         ChannelOrder[]
+  shipments             Shipment[]
+  returns               Return[]
 }
 
 model User {
@@ -202,6 +220,8 @@ model ProductVariant {
   stockSnapshots StockSnapshot[]
   stockReservations StockReservation[]
   channelVariants ChannelVariant[]
+  shipmentLines ShipmentLine[]
+  returnLines ReturnLine[]
 
   @@unique([tenantId, sku])
   @@index([tenantId, productId])
@@ -236,6 +256,8 @@ model Order {
   updatedAt   DateTime     @updatedAt
   lines       OrderLine[]
   channelOrders ChannelOrder[]
+  shipments   Shipment[]
+  returns     Return[]
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user   User?  @relation("UserOrders", fields: [userId], references: [id])
@@ -261,9 +283,86 @@ model OrderLine {
   variant ProductVariant? @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
 
   stockReservations StockReservation[]
+  shipmentLines ShipmentLine[]
+  returnLines ReturnLine[]
 
   @@index([tenantId, orderId])
   @@unique([tenantId, id])
+}
+
+model Shipment {
+  id          String         @id @default(cuid())
+  tenantId    String
+  orderId     String
+  warehouseId String
+  status      ShipmentStatus @default(CREATED)
+  carrier     String?
+  trackingNo  String?
+  shippedAt   DateTime?
+  deliveredAt DateTime?
+  meta        Json?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order     Order     @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
+  lines     ShipmentLine[]
+
+  @@index([tenantId, orderId])
+}
+
+model ShipmentLine {
+  id          String   @id @default(cuid())
+  tenantId    String
+  shipmentId  String
+  orderLineId String
+  variantId   String
+  qty         Int
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  shipment  Shipment       @relation(fields: [tenantId, shipmentId], references: [tenantId, id], onDelete: Cascade)
+  orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Restrict)
+  variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, shipmentId])
+}
+
+model Return {
+  id          String       @id @default(cuid())
+  tenantId    String
+  orderId     String
+  status      ReturnStatus @default(REQUESTED)
+  reason      String?
+  receivedAt  DateTime?
+  meta        Json?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order  Order  @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+  lines  ReturnLine[]
+
+  @@index([tenantId, orderId])
+}
+
+model ReturnLine {
+  id          String   @id @default(cuid())
+  tenantId    String
+  returnId    String
+  orderLineId String
+  variantId   String
+  qty         Int
+  condition   String?
+  createdAt   DateTime @default(now())
+
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  return    Return         @relation(fields: [tenantId, returnId], references: [tenantId, id], onDelete: Cascade)
+  orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Restrict)
+  variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
+
+  @@index([tenantId, returnId])
 }
 
 model Plugin {
@@ -372,6 +471,7 @@ model Warehouse {
   stockSnapshots  StockSnapshot[]
   stockReservations StockReservation[]
   warehouseMappings WarehouseMapping[]
+  shipments        Shipment[]
 
   @@unique([tenantId, code])
   @@unique([tenantId, id])

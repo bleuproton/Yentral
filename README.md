@@ -80,6 +80,7 @@ pnpm db:check        # migration sanity (validate/status/diff + DB checks)
 ## Smoke Tests
 - Inventory & variants: `npx tsx scripts/smoke_phase2.ts`
 - Channel mappings: `npx tsx scripts/smoke-phase3.ts`
+- Combined Phase2/3: `npm run smoke:phase2-3`
 
 ## Git Hooks (optional)
 - Pre-push: run `pnpm db:check` to ensure migrations and schema are in sync.
@@ -98,6 +99,9 @@ pnpm db:check        # migration sanity (validate/status/diff + DB checks)
   npm run db:status         # prisma migrate status
   npm run db:verify         # verify applied migrations in DB vs local folders
   npm run db:check          # migrations + drift checks
+  npm run db:check:migrations # check _prisma_migrations for unfinished/rolled-back
+  npm run db:check:tenant   # tenantId + tenant uniques on core tables
+  npm run db:check-all      # validate + status + migrations + tenant checks
   npm run db:migrate:dev    # apply migrations in dev
   npm run db:migrate:deploy # apply migrations in deploy/CI
   ```
