@@ -50,7 +50,12 @@ DO $$BEGIN
 END$$;
 ALTER TABLE "AuditEvent" ADD COLUMN IF NOT EXISTS "actorUserId" TEXT;
 ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER INDEX IF EXISTS "AuditEvent_tenantId_resource_idx" RENAME TO "AuditEvent_tenantId_resourceType_resourceId_idx";
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'AuditEvent_tenantId_resource_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'AuditEvent_tenantId_resourceType_resourceId_idx') THEN
+    ALTER INDEX "AuditEvent_tenantId_resource_idx" RENAME TO "AuditEvent_tenantId_resourceType_resourceId_idx";
+  END IF;
+END$$;
 
 -- StockSnapshot updatedAt
 ALTER TABLE "StockSnapshot" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
@@ -80,7 +85,12 @@ DO $$BEGIN
 END$$;
 UPDATE "StockLedger" SET "kind" = COALESCE("kind", 'ADJUST');
 ALTER TABLE "StockLedger" ALTER COLUMN "kind" SET NOT NULL;
-ALTER INDEX IF EXISTS "StockLedger_tenantId_wh_variant_idx" RENAME TO "StockLedger_tenantId_warehouseId_variantId_idx";
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'StockLedger_tenantId_wh_variant_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'StockLedger_tenantId_warehouseId_variantId_idx') THEN
+    ALTER INDEX "StockLedger_tenantId_wh_variant_idx" RENAME TO "StockLedger_tenantId_warehouseId_variantId_idx";
+  END IF;
+END$$;
 
 -- StockReservation table
 DO $$BEGIN
@@ -210,6 +220,21 @@ DO $$BEGIN
 END$$;
 
 -- Index renames for consistency
-ALTER INDEX IF EXISTS "InventoryReservation_tenant_orderLine_idx" RENAME TO "InventoryReservation_tenantId_orderLineId_idx";
-ALTER INDEX IF EXISTS "InventoryReservation_tenant_wh_variant_idx" RENAME TO "InventoryReservation_tenantId_warehouseId_variantId_idx";
-ALTER INDEX IF EXISTS "StockSnapshot_tenant_wh_variant_key" RENAME TO "StockSnapshot_tenantId_warehouseId_variantId_key";
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'InventoryReservation_tenant_orderLine_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'InventoryReservation_tenantId_orderLineId_idx') THEN
+    ALTER INDEX "InventoryReservation_tenant_orderLine_idx" RENAME TO "InventoryReservation_tenantId_orderLineId_idx";
+  END IF;
+END$$;
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'InventoryReservation_tenant_wh_variant_idx')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'InventoryReservation_tenantId_warehouseId_variantId_idx') THEN
+    ALTER INDEX "InventoryReservation_tenant_wh_variant_idx" RENAME TO "InventoryReservation_tenantId_warehouseId_variantId_idx";
+  END IF;
+END$$;
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'StockSnapshot_tenant_wh_variant_key')
+     AND NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'StockSnapshot_tenantId_warehouseId_variantId_key') THEN
+    ALTER INDEX "StockSnapshot_tenant_wh_variant_key" RENAME TO "StockSnapshot_tenantId_warehouseId_variantId_key";
+  END IF;
+END$$;

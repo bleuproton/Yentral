@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "dotenv/config";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -31,22 +32,22 @@ async function main() {
     const res = await pool.query(
       `SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" ORDER BY finished_at`
     );
-    const applied = new Map(res.rows.map((r) => [r.migration_name, r]));
-
-    local.forEach((name) => {
-      const m = applied.get(name);
-      if (!m) {
-        failures.push(`Missing migration in DB: ${name}`);
-      } else if (!m.finished_at) {
-        failures.push(`Migration not finished: ${name}`);
-      } else if (m.rolled_back_at) {
-        failures.push(`Migration rolled back: ${name}`);
-      }
+    const byName = new Map();
+    res.rows.forEach((r) => {
+      if (!byName.has(r.migration_name)) byName.set(r.migration_name, []);
+      byName.get(r.migration_name).push(r);
     });
 
-    res.rows.forEach((r) => {
-      if (r.rolled_back_at) failures.push(`Migration rolled back: ${r.migration_name}`);
-      if (!r.finished_at) failures.push(`Migration unfinished: ${r.migration_name}`);
+    local.forEach((name) => {
+      const rowsFor = byName.get(name) || [];
+      const hasApplied = rowsFor.some((r) => r.finished_at && !r.rolled_back_at);
+      const hasUnfinished = rowsFor.some((r) => !r.finished_at && !r.rolled_back_at);
+      const hasRolled = rowsFor.some((r) => r.rolled_back_at);
+
+      if (!rowsFor.length) failures.push(`Missing migration in DB: ${name}`);
+      if (!hasApplied) failures.push(`Migration not applied: ${name}`);
+      if (hasUnfinished) failures.push(`Migration not finished: ${name}`);
+      if (hasRolled && !hasApplied) failures.push(`Migration rolled back: ${name}`);
     });
   } catch (err) {
     failures.push(`Failed to read _prisma_migrations: ${err.message || err}`);
