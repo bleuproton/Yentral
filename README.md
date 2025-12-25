@@ -1,6 +1,24 @@
 # Deployment Guide
 
-Backend-first Next.js (App Router) scaffold with Prisma + PostgreSQL, Auth.js (NextAuth) credentials provider, multi-tenant RBAC, and Stripe billing API.
+Backend-first multi-tenant commerce/SaaS platform built on Next.js (App Router) with Prisma + PostgreSQL, Auth.js (NextAuth), RBAC, Stripe billing, plugins/connector marketplace, warehouse + inventory + channel mappings, jobs/pg-boss, customer support (tickets), and fulfillment (shipments/returns).
+
+## What this app is
+- Multi-tenant SaaS core: tenants, memberships, RBAC, audit events.
+- Commerce/PIM: products + variants, channel mappings (product/variant/order), inventory ledger/snapshots/reservations per warehouse.
+- Integrations: connector registry + versions, tenant-scoped integration connections, warehouse mappings, channel catalog/order links.
+- Async: jobs + job runs, pg-boss worker scaffold.
+- Support: tickets; IMAP/SMTP ingestion hooks placeholder.
+- Fulfillment: shipments/returns with tenant-safe FKs; inventory consumption and restock.
+
+## Coming next (roadmap, in order)
+1) Tenant enforcement hardening: RLS or strict app-layer guards on every API handler.
+2) IMAP ingest + SMTP auto-reply + SLA monitors (support operations end-to-end).
+3) Billing lifecycle: Stripe webhooks, invoicing models, compliance wiring.
+4) Flow orchestration (React Flow UI + Airbyte bridge): model IntegrationFlow/FlowNode/FlowRun, trigger external APIs (n8n-like), and kick Airbyte syncs; log per node in JobRun.
+5) Plugin/connector UX pass: marketplace UI, connector-specific validation flows.
+6) Inventory cleanup: deprecate legacy InventoryItem, rely on StockSnapshot/Reservation.
+7) Fulfillment providers: FBA/MCF/LVB/3PL support and label handling.
+8) UX/UI expansion: after core ops (1-3) are stable, start UI polish/flows in phases—marketplace/support first, then fulfillment and inventory dashboards.
 
 ## Prerequisites
 - Node.js 20 LTS + pnpm v10+
