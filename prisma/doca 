@@ -1,0 +1,986 @@
+20251224130947_init -- CreateEnum
+CREATE TYPE "Role" AS ENUM ('OWNER', 'ADMIN', 'MEMBER');
+
+-- CreateEnum
+CREATE TYPE "ProductStatus" AS ENUM ('DRAFT', 'ACTIVE', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'PAID', 'FULFILLED', 'CANCELLED', 'REFUNDED');
+
+-- CreateEnum
+CREATE TYPE "JobStatus" AS ENUM ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'CANCELLED');
+
+-- CreateEnum
+CREATE TYPE "TicketStatus" AS ENUM ('OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED');
+
+-- CreateTable
+CREATE TABLE "Tenant" (
+    "id" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "stripeCustomerId" TEXT,
+    "stripeSubscriptionId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Tenant_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT,
+    "image" TEXT,
+    "password" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Membership" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "role" "Role" NOT NULL DEFAULT 'MEMBER',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Membership_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VerificationToken" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Product" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "slug" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "priceCents" INTEGER NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "status" "ProductStatus" NOT NULL DEFAULT 'DRAFT',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "InventoryItem" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "location" TEXT,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
+    "reserved" INTEGER NOT NULL DEFAULT 0,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "InventoryItem_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Order" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "userId" TEXT,
+    "orderNumber" INTEGER NOT NULL,
+    "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
+    "currency" TEXT NOT NULL DEFAULT 'USD',
+    "totalCents" INTEGER NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "OrderLine" (
+    "id" TEXT NOT NULL,
+    "orderId" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "unitCents" INTEGER NOT NULL,
+    "totalCents" INTEGER NOT NULL,
+
+    CONSTRAINT "OrderLine_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Plugin" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "latestVersion" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Plugin_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PluginInstallation" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "pluginId" TEXT NOT NULL,
+    "version" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "config" JSONB,
+    "installedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PluginInstallation_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Job" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT,
+    "type" TEXT NOT NULL,
+    "status" "JobStatus" NOT NULL DEFAULT 'PENDING',
+    "payload" JSONB NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "maxAttempts" INTEGER NOT NULL DEFAULT 5,
+    "scheduledAt" TIMESTAMP(3),
+    "startedAt" TIMESTAMP(3),
+    "finishedAt" TIMESTAMP(3),
+    "error" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Job_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Ticket" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "authorId" TEXT NOT NULL,
+    "assigneeId" TEXT,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL,
+    "status" "TicketStatus" NOT NULL DEFAULT 'OPEN',
+    "priority" INTEGER NOT NULL DEFAULT 3,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Ticket_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Tenant_slug_key" ON "Tenant"("slug");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Membership_userId_tenantId_key" ON "Membership"("userId", "tenantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Product_tenantId_slug_key" ON "Product"("tenantId", "slug");
+
+-- CreateIndex
+CREATE INDEX "InventoryItem_tenantId_productId_idx" ON "InventoryItem"("tenantId", "productId");
+
+-- CreateIndex
+CREATE INDEX "Order_tenantId_status_idx" ON "Order"("tenantId", "status");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Order_tenantId_orderNumber_key" ON "Order"("tenantId", "orderNumber");
+
+-- CreateIndex
+CREATE INDEX "OrderLine_orderId_idx" ON "OrderLine"("orderId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Plugin_key_key" ON "Plugin"("key");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PluginInstallation_tenantId_pluginId_key" ON "PluginInstallation"("tenantId", "pluginId");
+
+-- CreateIndex
+CREATE INDEX "Job_status_idx" ON "Job"("status");
+
+-- CreateIndex
+CREATE INDEX "Job_tenantId_idx" ON "Job"("tenantId");
+
+-- CreateIndex
+CREATE INDEX "Job_scheduledAt_idx" ON "Job"("scheduledAt");
+
+-- CreateIndex
+CREATE INDEX "Ticket_tenantId_status_idx" ON "Ticket"("tenantId", "status");
+
+-- CreateIndex
+CREATE INDEX "Ticket_assigneeId_idx" ON "Ticket"("assigneeId");
+
+-- AddForeignKey
+ALTER TABLE "Membership" ADD CONSTRAINT "Membership_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Membership" ADD CONSTRAINT "Membership_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Order" ADD CONSTRAINT "Order_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PluginInstallation" ADD CONSTRAINT "PluginInstallation_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PluginInstallation" ADD CONSTRAINT "PluginInstallation_pluginId_fkey" FOREIGN KEY ("pluginId") REFERENCES "Plugin"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Job" ADD CONSTRAINT "Job_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Ticket" ADD CONSTRAINT "Ticket_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+20251224133138_add_job_runs -- CreateTable
+CREATE TABLE "JobRun" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT,
+    "jobName" TEXT NOT NULL,
+    "status" "JobStatus" NOT NULL DEFAULT 'PENDING',
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "finishedAt" TIMESTAMP(3),
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "maxAttempts" INTEGER NOT NULL DEFAULT 5,
+    "error" TEXT,
+    "meta" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "JobRun_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "JobRun_status_idx" ON "JobRun"("status");
+
+-- CreateIndex
+CREATE INDEX "JobRun_tenantId_jobName_idx" ON "JobRun"("tenantId", "jobName");
+
+-- AddForeignKey
+ALTER TABLE "JobRun" ADD CONSTRAINT "JobRun_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+20251224133527_plugin_registry_fields -- AlterTable
+ALTER TABLE "Plugin" ADD COLUMN     "channel" TEXT,
+ADD COLUMN     "configSchema" JSONB,
+ADD COLUMN     "homepage" TEXT,
+ADD COLUMN     "isChannelPlugin" BOOLEAN NOT NULL DEFAULT false;
+
+20251224134103_ticket_sla_fields -- AlterTable
+ALTER TABLE "Ticket" ADD COLUMN     "lastSlaNotifiedAt" TIMESTAMP(3),
+ADD COLUMN     "slaDueAt" TIMESTAMP(3);
+
+-- CreateIndex
+CREATE INDEX "Ticket_slaDueAt_idx" ON "Ticket"("slaDueAt");
+
+20251224141829_add_jurisdictions_legal_entities -- CreateEnum
+CREATE TYPE "ConnectorType" AS ENUM ('CHANNEL', 'WMS', 'PAYMENTS', 'OTHER');
+
+-- CreateTable
+CREATE TABLE "Jurisdiction" (
+    "id" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "countryCode" TEXT NOT NULL,
+    "currency" TEXT NOT NULL,
+    "timezone" TEXT NOT NULL,
+
+    CONSTRAINT "Jurisdiction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Organization" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Organization_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "LegalEntity" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "organizationId" TEXT NOT NULL,
+    "jurisdictionId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "taxId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "LegalEntity_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "TaxProfile" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "legalEntityId" TEXT NOT NULL,
+    "jurisdictionId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "ossEnabled" BOOLEAN NOT NULL DEFAULT false,
+    "settings" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "TaxProfile_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Warehouse" (
+    "id" TEXT NOT NULL,
+    "tenantId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "address" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Warehouse_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Connector" (
+    "id" TEXT NOT NULL,
+    "key" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "type" "ConnectorType" NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Connector_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ConnectorVersion" (
+    "id" TEXT NOT NULL,
+    "connectorId" TEXT NOT NULL,
+    "version" TEXT NOT NULL,
+    "schema" JSONB,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ConnectorVersion_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Jurisdiction_code_key" ON "Jurisdiction"("code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Organization_tenantId_name_key" ON "Organization"("tenantId", "name");
+
+-- CreateIndex
+CREATE INDEX "LegalEntity_tenantId_jurisdictionId_idx" ON "LegalEntity"("tenantId", "jurisdictionId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "LegalEntity_tenantId_name_key" ON "LegalEntity"("tenantId", "name");
+
+-- CreateIndex
+CREATE INDEX "TaxProfile_tenantId_legalEntityId_idx" ON "TaxProfile"("tenantId", "legalEntityId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "TaxProfile_tenantId_code_key" ON "TaxProfile"("tenantId", "code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Warehouse_tenantId_code_key" ON "Warehouse"("tenantId", "code");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Connector_key_key" ON "Connector"("key");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ConnectorVersion_connectorId_version_key" ON "ConnectorVersion"("connectorId", "version");
+
+-- AddForeignKey
+ALTER TABLE "Organization" ADD CONSTRAINT "Organization_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LegalEntity" ADD CONSTRAINT "LegalEntity_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LegalEntity" ADD CONSTRAINT "LegalEntity_organizationId_fkey" FOREIGN KEY ("organizationId") REFERENCES "Organization"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "LegalEntity" ADD CONSTRAINT "LegalEntity_jurisdictionId_fkey" FOREIGN KEY ("jurisdictionId") REFERENCES "Jurisdiction"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaxProfile" ADD CONSTRAINT "TaxProfile_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaxProfile" ADD CONSTRAINT "TaxProfile_legalEntityId_fkey" FOREIGN KEY ("legalEntityId") REFERENCES "LegalEntity"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TaxProfile" ADD CONSTRAINT "TaxProfile_jurisdictionId_fkey" FOREIGN KEY ("jurisdictionId") REFERENCES "Jurisdiction"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Warehouse" ADD CONSTRAINT "Warehouse_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ConnectorVersion" ADD CONSTRAINT "ConnectorVersion_connectorId_fkey" FOREIGN KEY ("connectorId") REFERENCES "Connector"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+20251225120000_tenant_safety_phase1 -- Add tenantId to User, Account, Session with backfill from Membership/User
+ALTER TABLE "User" ADD COLUMN "tenantId" TEXT;
+UPDATE "User" u SET "tenantId" = m."tenantId" FROM "Membership" m WHERE m."userId" = u.id AND u."tenantId" IS NULL;
+UPDATE "User" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
+ALTER TABLE "User" ALTER COLUMN "tenantId" SET NOT NULL;
+ALTER TABLE "User" ADD CONSTRAINT "User_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- Replace unique on email with tenant-scoped
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'User_email_key') THEN
+    ALTER TABLE "User" DROP CONSTRAINT "User_email_key";
+  END IF;
+END$$;
+CREATE UNIQUE INDEX IF NOT EXISTS "User_tenantId_email_key" ON "User"("tenantId","email");
+
+ALTER TABLE "Account" ADD COLUMN "tenantId" TEXT;
+UPDATE "Account" a SET "tenantId" = u."tenantId" FROM "User" u WHERE u.id = a."userId" AND a."tenantId" IS NULL;
+UPDATE "Account" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
+ALTER TABLE "Account" ALTER COLUMN "tenantId" SET NOT NULL;
+ALTER TABLE "Account" ADD CONSTRAINT "Account_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Account_provider_providerAccountId_key') THEN
+    ALTER TABLE "Account" DROP CONSTRAINT "Account_provider_providerAccountId_key";
+  END IF;
+END$$;
+CREATE UNIQUE INDEX IF NOT EXISTS "Account_tenantId_provider_providerAccountId_key" ON "Account"("tenantId","provider","providerAccountId");
+
+ALTER TABLE "Session" ADD COLUMN "tenantId" TEXT;
+UPDATE "Session" s SET "tenantId" = u."tenantId" FROM "User" u WHERE u.id = s."userId" AND s."tenantId" IS NULL;
+UPDATE "Session" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
+ALTER TABLE "Session" ALTER COLUMN "tenantId" SET NOT NULL;
+ALTER TABLE "Session" ADD CONSTRAINT "Session_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Session_sessionToken_key') THEN
+    ALTER TABLE "Session" DROP CONSTRAINT "Session_sessionToken_key";
+  END IF;
+END$$;
+CREATE UNIQUE INDEX IF NOT EXISTS "Session_tenantId_sessionToken_key" ON "Session"("tenantId","sessionToken");
+
+-- Product: add sku and tenant-scoped unique
+ALTER TABLE "Product" ADD COLUMN "sku" TEXT;
+UPDATE "Product" SET "sku" = COALESCE("slug",'sku-'||id) WHERE "sku" IS NULL;
+ALTER TABLE "Product" ALTER COLUMN "sku" SET NOT NULL;
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Product_tenantId_slug_key') THEN
+    ALTER TABLE "Product" DROP CONSTRAINT "Product_tenantId_slug_key";
+  END IF;
+END$$;
+CREATE UNIQUE INDEX IF NOT EXISTS "Product_tenantId_sku_key" ON "Product"("tenantId","sku");
+CREATE INDEX IF NOT EXISTS "Product_tenantId_slug_idx" ON "Product"("tenantId","slug");
+
+-- OrderLine: add tenantId and backfill from Order
+ALTER TABLE "OrderLine" ADD COLUMN "tenantId" TEXT;
+UPDATE "OrderLine" ol SET "tenantId" = o."tenantId" FROM "Order" o WHERE o.id = ol."orderId" AND ol."tenantId" IS NULL;
+UPDATE "OrderLine" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
+ALTER TABLE "OrderLine" ALTER COLUMN "tenantId" SET NOT NULL;
+ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+CREATE INDEX IF NOT EXISTS "OrderLine_tenantId_orderId_idx" ON "OrderLine"("tenantId","orderId");
+
+-- Jobs
+ALTER TABLE "Job" ALTER COLUMN "tenantId" DROP DEFAULT;
+UPDATE "Job" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
+ALTER TABLE "Job" ALTER COLUMN "tenantId" SET NOT NULL;
+ALTER TABLE "Job" ADD COLUMN "dedupeKey" TEXT;
+ALTER TABLE "Job" ADD COLUMN "backoffSeconds" INTEGER;
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'Job_tenantId_dedupeKey_key') THEN
+    ALTER TABLE "Job" DROP CONSTRAINT "Job_tenantId_dedupeKey_key";
+  END IF;
+END$$;
+CREATE UNIQUE INDEX IF NOT EXISTS "Job_tenantId_dedupeKey_key" ON "Job"("tenantId","dedupeKey");
+ALTER TABLE "Job" ADD CONSTRAINT "Job_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- JobRun
+ALTER TABLE "JobRun" ALTER COLUMN "tenantId" DROP DEFAULT;
+UPDATE "JobRun" SET "tenantId" = COALESCE("tenantId",(SELECT id FROM "Tenant" LIMIT 1));
+ALTER TABLE "JobRun" ALTER COLUMN "tenantId" SET NOT NULL;
+ALTER TABLE "JobRun" ADD COLUMN "jobId" TEXT;
+ALTER TABLE "JobRun" ADD CONSTRAINT "JobRun_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "JobRun" ADD CONSTRAINT "JobRun_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AuditEvent table
+CREATE TABLE IF NOT EXISTS "AuditEvent" (
+  "id" TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "actorId" TEXT,
+  "action" TEXT NOT NULL,
+  "resourceType" TEXT NOT NULL,
+  "resourceId" TEXT NOT NULL,
+  "metadata" JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "AuditEvent_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "AuditEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "AuditEvent_tenantId_resource_idx" ON "AuditEvent"("tenantId","resourceType","resourceId");
+
+20251225153000_phase3_channel_mappings -- Phase 3: channel mappings, warehouse mappings, and stock/next-auth alignment
+
+-- Enum for stock ledger kinds (legacy StockReason gets migrated to this)
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StockLedgerKind') THEN
+    CREATE TYPE "StockLedgerKind" AS ENUM ('RECEIPT', 'RESERVE', 'RELEASE', 'SHIP', 'RETURN', 'ADJUST');
+  END IF;
+END$$;
+
+-- Drop tenant scoping from NextAuth tables (schema is global)
+ALTER TABLE "Account" DROP CONSTRAINT IF EXISTS "Account_tenantId_fkey";
+DROP INDEX IF EXISTS "Account_tenantId_provider_providerAccountId_key";
+ALTER TABLE "Account" DROP COLUMN IF EXISTS "tenantId";
+
+ALTER TABLE "Session" DROP CONSTRAINT IF EXISTS "Session_tenantId_fkey";
+DROP INDEX IF EXISTS "Session_tenantId_sessionToken_key";
+ALTER TABLE "Session" DROP COLUMN IF EXISTS "tenantId";
+
+ALTER TABLE "User" DROP CONSTRAINT IF EXISTS "User_tenantId_fkey";
+DROP INDEX IF EXISTS "User_tenantId_email_key";
+ALTER TABLE "User" DROP COLUMN IF EXISTS "tenantId";
+
+-- Product: remove unused slug (sku is the identifier)
+DROP INDEX IF EXISTS "Product_tenantId_slug_key";
+DROP INDEX IF EXISTS "Product_tenantId_slug_idx";
+ALTER TABLE "Product" DROP COLUMN IF EXISTS "slug";
+
+-- OrderLine: drop legacy orderId-only index (tenant-scoped index remains)
+DROP INDEX IF EXISTS "OrderLine_orderId_idx";
+
+-- Job reliability fields
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Job' AND column_name='error') THEN
+    ALTER TABLE "Job" RENAME COLUMN "error" TO "lastError";
+  END IF;
+END$$;
+ALTER TABLE "Job" ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+ALTER TABLE "Job" ADD COLUMN IF NOT EXISTS "nextRunAt" TIMESTAMP(3);
+ALTER TABLE "Job" ADD COLUMN IF NOT EXISTS "priority" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Job" ADD COLUMN IF NOT EXISTS "lockedAt" TIMESTAMP(3);
+ALTER TABLE "Job" DROP COLUMN IF EXISTS "backoffSeconds";
+
+-- Audit events: align actor column
+ALTER TABLE "AuditEvent" DROP CONSTRAINT IF EXISTS "AuditEvent_actorId_fkey";
+ALTER TABLE "AuditEvent" DROP CONSTRAINT IF EXISTS "AuditEvent_actorUserId_fkey";
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='AuditEvent' AND column_name='actorId' AND column_name <> 'actorUserId') THEN
+    ALTER TABLE "AuditEvent" RENAME COLUMN "actorId" TO "actorUserId";
+  END IF;
+END$$;
+ALTER TABLE "AuditEvent" ADD COLUMN IF NOT EXISTS "actorUserId" TEXT;
+ALTER TABLE "AuditEvent" ADD CONSTRAINT "AuditEvent_actorUserId_fkey" FOREIGN KEY ("actorUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER INDEX IF EXISTS "AuditEvent_tenantId_resource_idx" RENAME TO "AuditEvent_tenantId_resourceType_resourceId_idx";
+
+-- StockSnapshot updatedAt
+ALTER TABLE "StockSnapshot" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- StockLedger: migrate from StockReason enum to StockLedgerKind + text reason
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='StockLedger' AND column_name='reason') THEN
+    BEGIN
+      ALTER TABLE "StockLedger" RENAME COLUMN "reason" TO "reason_old";
+    EXCEPTION WHEN duplicate_column THEN
+      NULL;
+    END;
+  END IF;
+END$$;
+ALTER TABLE "StockLedger" ADD COLUMN IF NOT EXISTS "reason" TEXT;
+ALTER TABLE "StockLedger" ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+ALTER TABLE "StockLedger" ADD COLUMN IF NOT EXISTS "kind" "StockLedgerKind";
+DO $$BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='StockLedger' AND column_name='reason_old') THEN
+    UPDATE "StockLedger" SET "kind" = COALESCE("kind", ("reason_old"::text)::"StockLedgerKind");
+    UPDATE "StockLedger" SET "reason" = COALESCE("reason", "reason_old"::text);
+    ALTER TABLE "StockLedger" DROP COLUMN "reason_old";
+    IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StockReason') THEN
+      DROP TYPE "StockReason";
+    END IF;
+  END IF;
+END$$;
+UPDATE "StockLedger" SET "kind" = COALESCE("kind", 'ADJUST');
+ALTER TABLE "StockLedger" ALTER COLUMN "kind" SET NOT NULL;
+ALTER INDEX IF EXISTS "StockLedger_tenantId_wh_variant_idx" RENAME TO "StockLedger_tenantId_warehouseId_variantId_idx";
+
+-- StockReservation table
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='StockReservation') THEN
+    CREATE TABLE "StockReservation" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "orderLineId" TEXT NOT NULL,
+      "warehouseId" TEXT NOT NULL,
+      "variantId" TEXT NOT NULL,
+      "qty" INTEGER NOT NULL,
+      "status" "ReservationStatus" NOT NULL DEFAULT 'ACTIVE',
+      "dedupeKey" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "StockReservation_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "StockReservation_orderLineId_fkey" FOREIGN KEY ("orderLineId") REFERENCES "OrderLine"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "StockReservation_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "StockReservation_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+    CREATE INDEX "StockReservation_tenantId_orderLineId_idx" ON "StockReservation"("tenantId","orderLineId");
+    CREATE INDEX "StockReservation_tenantId_warehouseId_variantId_idx" ON "StockReservation"("tenantId","warehouseId","variantId");
+    CREATE UNIQUE INDEX "StockReservation_tenantId_dedupeKey_key" ON "StockReservation"("tenantId","dedupeKey");
+  END IF;
+END$$;
+
+-- Integration connections and channel mappings
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='IntegrationConnection') THEN
+    CREATE TABLE "IntegrationConnection" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "connectorVersionId" TEXT NOT NULL,
+      "name" TEXT,
+      "region" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'INACTIVE',
+      "config" JSONB,
+      "lastSyncAt" TIMESTAMP(3),
+      "lastError" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "IntegrationConnection_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "IntegrationConnection_connectorVersionId_fkey" FOREIGN KEY ("connectorVersionId") REFERENCES "ConnectorVersion"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+    CREATE INDEX "IntegrationConnection_tenantId_connectorVersionId_idx" ON "IntegrationConnection"("tenantId","connectorVersionId");
+    CREATE INDEX "IntegrationConnection_tenantId_status_idx" ON "IntegrationConnection"("tenantId","status");
+  END IF;
+END$$;
+
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='WarehouseMapping') THEN
+    CREATE TABLE "WarehouseMapping" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "connectionId" TEXT NOT NULL,
+      "externalLocationId" TEXT NOT NULL,
+      "warehouseId" TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "WarehouseMapping_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "WarehouseMapping_connectionId_fkey" FOREIGN KEY ("connectionId") REFERENCES "IntegrationConnection"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "WarehouseMapping_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+    CREATE UNIQUE INDEX "WarehouseMapping_tenantId_connectionId_externalLocationId_key" ON "WarehouseMapping"("tenantId","connectionId","externalLocationId");
+    CREATE INDEX "WarehouseMapping_tenantId_warehouseId_idx" ON "WarehouseMapping"("tenantId","warehouseId");
+  END IF;
+END$$;
+
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='ChannelProduct') THEN
+    CREATE TABLE "ChannelProduct" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "connectionId" TEXT NOT NULL,
+      "productId" TEXT NOT NULL,
+      "externalId" TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ChannelProduct_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChannelProduct_connectionId_fkey" FOREIGN KEY ("connectionId") REFERENCES "IntegrationConnection"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChannelProduct_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    );
+    CREATE UNIQUE INDEX "ChannelProduct_tenantId_connectionId_externalId_key" ON "ChannelProduct"("tenantId","connectionId","externalId");
+    CREATE UNIQUE INDEX "ChannelProduct_tenantId_connectionId_productId_key" ON "ChannelProduct"("tenantId","connectionId","productId");
+  END IF;
+END$$;
+
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='ChannelVariant') THEN
+    CREATE TABLE "ChannelVariant" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "connectionId" TEXT NOT NULL,
+      "variantId" TEXT NOT NULL,
+      "externalId" TEXT NOT NULL,
+      "asin" TEXT,
+      "externalSku" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ChannelVariant_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChannelVariant_connectionId_fkey" FOREIGN KEY ("connectionId") REFERENCES "IntegrationConnection"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChannelVariant_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    );
+    CREATE UNIQUE INDEX "ChannelVariant_tenantId_connectionId_externalId_key" ON "ChannelVariant"("tenantId","connectionId","externalId");
+    CREATE UNIQUE INDEX "ChannelVariant_tenantId_connectionId_variantId_key" ON "ChannelVariant"("tenantId","connectionId","variantId");
+  END IF;
+END$$;
+
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='ChannelOrder') THEN
+    CREATE TABLE "ChannelOrder" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "connectionId" TEXT NOT NULL,
+      "orderId" TEXT NOT NULL,
+      "externalOrderId" TEXT NOT NULL,
+      "raw" JSONB,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "ChannelOrder_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChannelOrder_connectionId_fkey" FOREIGN KEY ("connectionId") REFERENCES "IntegrationConnection"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "ChannelOrder_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    );
+    CREATE UNIQUE INDEX "ChannelOrder_tenantId_connectionId_externalOrderId_key" ON "ChannelOrder"("tenantId","connectionId","externalOrderId");
+    CREATE UNIQUE INDEX "ChannelOrder_tenantId_connectionId_orderId_key" ON "ChannelOrder"("tenantId","connectionId","orderId");
+  END IF;
+END$$;
+
+-- Index renames for consistency
+ALTER INDEX IF EXISTS "InventoryReservation_tenant_orderLine_idx" RENAME TO "InventoryReservation_tenantId_orderLineId_idx";
+ALTER INDEX IF EXISTS "InventoryReservation_tenant_wh_variant_idx" RENAME TO "InventoryReservation_tenantId_warehouseId_variantId_idx";
+ALTER INDEX IF EXISTS "StockSnapshot_tenant_wh_variant_key" RENAME TO "StockSnapshot_tenantId_warehouseId_variantId_key";
+
+20251225161500_phase3_channel_mappings_patch -- Patch after Phase 3: add raw payloads and align updatedAt columns to Prisma @updatedAt semantics.
+
+ALTER TABLE "ChannelProduct" ADD COLUMN IF NOT EXISTS "raw" JSONB;
+ALTER TABLE "ChannelVariant" ADD COLUMN IF NOT EXISTS "raw" JSONB;
+
+-- Drop default on updatedAt so Prisma @updatedAt can manage the timestamp
+ALTER TABLE "ChannelOrder" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "ChannelProduct" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "ChannelVariant" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "IntegrationConnection" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "ProductVariant" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "StockReservation" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "StockSnapshot" ALTER COLUMN "updatedAt" DROP DEFAULT;
+ALTER TABLE "WarehouseMapping" ALTER COLUMN "updatedAt" DROP DEFAULT;
+
+20251225170000_phase2_variants_inventory_patch -- Phase 2 (patch): product variants and enterprise inventory (additive, non-breaking)
+
+-- ProductVariant
+CREATE TABLE IF NOT EXISTS "ProductVariant" (
+  "id" TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "productId" TEXT NOT NULL,
+  "sku" TEXT NOT NULL,
+  "ean" TEXT,
+  "attributes" JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ProductVariant_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "ProductVariant_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "ProductVariant_tenantId_sku_key" ON "ProductVariant"("tenantId","sku");
+CREATE INDEX IF NOT EXISTS "ProductVariant_tenantId_productId_idx" ON "ProductVariant"("tenantId","productId");
+
+-- OrderLine: add variantId (nullable)
+ALTER TABLE "OrderLine" ADD COLUMN IF NOT EXISTS "variantId" TEXT;
+DO $$BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+    WHERE table_name='OrderLine' AND constraint_name='OrderLine_variantId_fkey'
+  ) THEN
+    ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+  END IF;
+END$$;
+
+-- StockReason enum
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StockReason') THEN
+    CREATE TYPE "StockReason" AS ENUM ('RECEIPT','RESERVE','RELEASE','SHIP','RETURN','ADJUST');
+  END IF;
+END$$;
+
+-- ReservationStatus enum
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ReservationStatus') THEN
+    CREATE TYPE "ReservationStatus" AS ENUM ('ACTIVE','RELEASED','CONSUMED');
+  END IF;
+END$$;
+
+-- StockLedger
+CREATE TABLE IF NOT EXISTS "StockLedger" (
+  "id" TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "warehouseId" TEXT NOT NULL,
+  "variantId" TEXT NOT NULL,
+  "qtyDelta" INTEGER NOT NULL,
+  "reason" "StockReason" NOT NULL,
+  "refType" TEXT,
+  "refId" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "StockLedger_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "StockLedger_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "StockLedger_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "StockLedger_tenantId_wh_variant_idx" ON "StockLedger"("tenantId","warehouseId","variantId");
+
+-- StockSnapshot
+CREATE TABLE IF NOT EXISTS "StockSnapshot" (
+  "id" TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "warehouseId" TEXT NOT NULL,
+  "variantId" TEXT NOT NULL,
+  "onHand" INTEGER NOT NULL,
+  "reserved" INTEGER NOT NULL,
+  "available" INTEGER NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "StockSnapshot_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "StockSnapshot_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "StockSnapshot_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "StockSnapshot_tenant_wh_variant_key" ON "StockSnapshot"("tenantId","warehouseId","variantId");
+
+-- InventoryReservation
+CREATE TABLE IF NOT EXISTS "InventoryReservation" (
+  "id" TEXT PRIMARY KEY,
+  "tenantId" TEXT NOT NULL,
+  "orderLineId" TEXT NOT NULL,
+  "warehouseId" TEXT NOT NULL,
+  "variantId" TEXT NOT NULL,
+  "qty" INTEGER NOT NULL,
+  "status" "ReservationStatus" NOT NULL DEFAULT 'ACTIVE',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "InventoryReservation_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "InventoryReservation_orderLineId_fkey" FOREIGN KEY ("orderLineId") REFERENCES "OrderLine"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "InventoryReservation_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT "InventoryReservation_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "InventoryReservation_tenant_orderLine_idx" ON "InventoryReservation"("tenantId","orderLineId");
+CREATE INDEX IF NOT EXISTS "InventoryReservation_tenant_wh_variant_idx" ON "InventoryReservation"("tenantId","warehouseId","variantId");
+
+20251225170100_phase2_variants_stock_patch -- Phase 2 (stock) patch: align stock models to StockLedgerKind, StockReservation, and snapshot updates.
+
+-- Ensure StockLedgerKind enum exists
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'StockLedgerKind') THEN
+    CREATE TYPE "StockLedgerKind" AS ENUM ('RECEIPT','RESERVE','RELEASE','SHIP','RETURN','ADJUST');
+  END IF;
+END$$;
+
+-- Add columns to StockLedger
+ALTER TABLE "StockLedger" ADD COLUMN IF NOT EXISTS "kind" "StockLedgerKind";
+ALTER TABLE "StockLedger" ADD COLUMN IF NOT EXISTS "reason" TEXT;
+ALTER TABLE "StockLedger" ADD COLUMN IF NOT EXISTS "correlationId" TEXT;
+
+-- Convert reason column from enum StockReason to TEXT if needed
+DO $$BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_name='StockLedger' AND column_name='reason' AND udt_name='StockReason'
+  ) THEN
+    ALTER TABLE "StockLedger" ALTER COLUMN "reason" TYPE TEXT USING "reason"::text;
+  END IF;
+END$$;
+
+-- Backfill kind from reason text when empty
+UPDATE "StockLedger" SET "kind" = "reason"::text::"StockLedgerKind" WHERE "kind" IS NULL AND "reason" IS NOT NULL;
+UPDATE "StockLedger" SET "kind" = 'ADJUST' WHERE "kind" IS NULL;
+ALTER TABLE "StockLedger" ALTER COLUMN "kind" SET NOT NULL;
+
+-- Drop StockReason type if unused
+DO $$DECLARE
+  cnt INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO cnt
+  FROM pg_type t
+  JOIN pg_attribute a ON a.atttypid = t.oid
+  WHERE t.typname = 'StockReason';
+  IF cnt = 0 THEN
+    DROP TYPE IF EXISTS "StockReason";
+  END IF;
+END$$;
+
+-- StockSnapshot: add updatedAt
+ALTER TABLE "StockSnapshot" ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- StockReservation table
+DO $$BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema='public' AND table_name='StockReservation') THEN
+    CREATE TABLE "StockReservation" (
+      "id" TEXT PRIMARY KEY,
+      "tenantId" TEXT NOT NULL,
+      "orderLineId" TEXT NOT NULL,
+      "warehouseId" TEXT NOT NULL,
+      "variantId" TEXT NOT NULL,
+      "qty" INTEGER NOT NULL,
+      "status" "ReservationStatus" NOT NULL DEFAULT 'ACTIVE',
+      "dedupeKey" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "StockReservation_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "StockReservation_orderLineId_fkey" FOREIGN KEY ("orderLineId") REFERENCES "OrderLine"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "StockReservation_warehouseId_fkey" FOREIGN KEY ("warehouseId") REFERENCES "Warehouse"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+      CONSTRAINT "StockReservation_variantId_fkey" FOREIGN KEY ("variantId") REFERENCES "ProductVariant"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    );
+    CREATE INDEX "StockReservation_tenant_orderLine_idx" ON "StockReservation"("tenantId","orderLineId");
+    CREATE INDEX "StockReservation_tenant_wh_variant_idx" ON "StockReservation"("tenantId","warehouseId","variantId");
+    CREATE UNIQUE INDEX "StockReservation_tenant_dedupe_key" ON "StockReservation"("tenantId","dedupeKey");
+  END IF;
+END$$;

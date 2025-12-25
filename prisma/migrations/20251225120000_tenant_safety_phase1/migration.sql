@@ -1,4 +1,5 @@
 -- Add tenantId to User, Account, Session with backfill from Membership/User
+ALTER TABLE "User" DROP CONSTRAINT IF EXISTS "User_tenantId_fkey";
 ALTER TABLE "User" ADD COLUMN "tenantId" TEXT;
 UPDATE "User" u SET "tenantId" = m."tenantId" FROM "Membership" m WHERE m."userId" = u.id AND u."tenantId" IS NULL;
 UPDATE "User" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
@@ -10,8 +11,10 @@ DO $$BEGIN
     ALTER TABLE "User" DROP CONSTRAINT "User_email_key";
   END IF;
 END$$;
+DROP INDEX IF EXISTS "User_tenantId_email_key";
 CREATE UNIQUE INDEX IF NOT EXISTS "User_tenantId_email_key" ON "User"("tenantId","email");
 
+ALTER TABLE "Account" DROP CONSTRAINT IF EXISTS "Account_tenantId_fkey";
 ALTER TABLE "Account" ADD COLUMN "tenantId" TEXT;
 UPDATE "Account" a SET "tenantId" = u."tenantId" FROM "User" u WHERE u.id = a."userId" AND a."tenantId" IS NULL;
 UPDATE "Account" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
@@ -22,8 +25,10 @@ DO $$BEGIN
     ALTER TABLE "Account" DROP CONSTRAINT "Account_provider_providerAccountId_key";
   END IF;
 END$$;
+DROP INDEX IF EXISTS "Account_tenantId_provider_providerAccountId_key";
 CREATE UNIQUE INDEX IF NOT EXISTS "Account_tenantId_provider_providerAccountId_key" ON "Account"("tenantId","provider","providerAccountId");
 
+ALTER TABLE "Session" DROP CONSTRAINT IF EXISTS "Session_tenantId_fkey";
 ALTER TABLE "Session" ADD COLUMN "tenantId" TEXT;
 UPDATE "Session" s SET "tenantId" = u."tenantId" FROM "User" u WHERE u.id = s."userId" AND s."tenantId" IS NULL;
 UPDATE "Session" SET "tenantId" = (SELECT id FROM "Tenant" LIMIT 1) WHERE "tenantId" IS NULL;
@@ -34,6 +39,7 @@ DO $$BEGIN
     ALTER TABLE "Session" DROP CONSTRAINT "Session_sessionToken_key";
   END IF;
 END$$;
+DROP INDEX IF EXISTS "Session_tenantId_sessionToken_key";
 CREATE UNIQUE INDEX IF NOT EXISTS "Session_tenantId_sessionToken_key" ON "Session"("tenantId","sessionToken");
 
 -- Product: add sku and tenant-scoped unique
@@ -45,6 +51,7 @@ DO $$BEGIN
     ALTER TABLE "Product" DROP CONSTRAINT "Product_tenantId_slug_key";
   END IF;
 END$$;
+DROP INDEX IF EXISTS "Product_tenantId_sku_key";
 CREATE UNIQUE INDEX IF NOT EXISTS "Product_tenantId_sku_key" ON "Product"("tenantId","sku");
 CREATE INDEX IF NOT EXISTS "Product_tenantId_slug_idx" ON "Product"("tenantId","slug");
 
@@ -67,6 +74,8 @@ DO $$BEGIN
     ALTER TABLE "Job" DROP CONSTRAINT "Job_tenantId_dedupeKey_key";
   END IF;
 END$$;
+DROP INDEX IF EXISTS "Job_tenantId_dedupeKey_key";
+ALTER TABLE "Job" DROP CONSTRAINT IF EXISTS "Job_tenantId_fkey";
 CREATE UNIQUE INDEX IF NOT EXISTS "Job_tenantId_dedupeKey_key" ON "Job"("tenantId","dedupeKey");
 ALTER TABLE "Job" ADD CONSTRAINT "Job_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
@@ -75,6 +84,8 @@ ALTER TABLE "JobRun" ALTER COLUMN "tenantId" DROP DEFAULT;
 UPDATE "JobRun" SET "tenantId" = COALESCE("tenantId",(SELECT id FROM "Tenant" LIMIT 1));
 ALTER TABLE "JobRun" ALTER COLUMN "tenantId" SET NOT NULL;
 ALTER TABLE "JobRun" ADD COLUMN "jobId" TEXT;
+ALTER TABLE "JobRun" DROP CONSTRAINT IF EXISTS "JobRun_tenantId_fkey";
+ALTER TABLE "JobRun" DROP CONSTRAINT IF EXISTS "JobRun_jobId_fkey";
 ALTER TABLE "JobRun" ADD CONSTRAINT "JobRun_tenantId_fkey" FOREIGN KEY ("tenantId") REFERENCES "Tenant"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "JobRun" ADD CONSTRAINT "JobRun_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "Job"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -92,4 +103,3 @@ CREATE TABLE IF NOT EXISTS "AuditEvent" (
   CONSTRAINT "AuditEvent_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 CREATE INDEX IF NOT EXISTS "AuditEvent_tenantId_resource_idx" ON "AuditEvent"("tenantId","resourceType","resourceId");
-

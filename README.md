@@ -73,12 +73,34 @@ pnpm db:validate
 pnpm db:status
 pnpm db:generate
 pnpm state:check
+pnpm db:check        # migration sanity (validate/status/diff + DB checks)
 ```
 - Tickets UI: `/tickets` (requires authenticated session; lists recent tickets with SLA info).
 
 ## Smoke Tests
 - Inventory & variants: `npx tsx scripts/smoke_phase2.ts`
 - Channel mappings: `npx tsx scripts/smoke-phase3.ts`
+
+## Git Hooks (optional)
+- Pre-push: run `pnpm db:check` to ensure migrations and schema are in sync.
+
+## Migrations & Shadow DB
+- `DATABASE_URL` points to your main database.
+- `SHADOW_DATABASE_URL` is required for drift checks; create a separate empty database (e.g. `yentral_shadow`) and set the URL.
+- Example:
+  ```
+  DATABASE_URL=postgresql://postgres:postgres@localhost:5432/yentral?schema=public
+  SHADOW_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/yentral_shadow?schema=public
+  ```
+- Common commands:
+  ```bash
+  npm run db:validate       # prisma validate
+  npm run db:status         # prisma migrate status
+  npm run db:verify         # verify applied migrations in DB vs local folders
+  npm run db:check          # migrations + drift checks
+  npm run db:migrate:dev    # apply migrations in dev
+  npm run db:migrate:deploy # apply migrations in deploy/CI
+  ```
 
 ## Deployment Checklist
 1) Set env vars on the platform.
