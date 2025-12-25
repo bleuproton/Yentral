@@ -25,7 +25,7 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "smoke:phase2-3": "node --loader tsx scripts/smoke-phase2-3.ts",
+    "smoke:phase2-3": "node --loader tsx src/scripts/smoke-phase2-3.ts",
     "smoke:phase4": "node --loader tsx scripts/smoke/phase4_smoke.mjs",
     "boss:worker": "PG_BOSS_WORKER=1 tsx scripts/boss-worker.ts",
     "db:status": "prisma migrate status",

@@ -11,7 +11,7 @@ export class InventoryService {
   private reservations = new StockReservationRepository();
 
   async adjustStock(input: AdjustStockInput) {
-    const { tenantId, warehouseId, variantId, qtyDelta, reason, correlationId } = input;
+    const { tenantId, warehouseId, variantId, qtyDelta, kind, reason, correlationId, refType, refId } = input;
     return prisma.$transaction(async (tx) => {
       const ledgerRepo = new StockLedgerRepository(tx);
       const snapshotRepo = new StockSnapshotRepository(tx);
@@ -21,9 +21,11 @@ export class InventoryService {
         warehouseId,
         variantId,
         qtyDelta,
-        kind: StockLedgerKind.ADJUST,
+        kind,
         reason: reason ?? null,
-        correlationId: correlationId ?? null
+        correlationId: correlationId ?? null,
+        refType: refType ?? null,
+        refId: refId ?? null
       });
 
       return snapshotRepo.upsertAndApplyDelta(tenantId, warehouseId, variantId, qtyDelta, 0);

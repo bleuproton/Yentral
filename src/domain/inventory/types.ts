@@ -5,8 +5,11 @@ export type AdjustStockInput = {
   warehouseId: string;
   variantId: string;
   qtyDelta: number;
+  kind: StockLedgerKind;
   reason?: string | null;
   correlationId?: string | null;
+  refType?: string | null;
+  refId?: string | null;
 };
 
 export type ReserveStockInput = {

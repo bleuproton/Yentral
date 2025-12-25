@@ -73,6 +73,7 @@ async function main() {
     warehouseId: warehouse.id,
     variantId: variant.id,
     qtyDelta: 10,
+    kind: "RECEIPT",
     reason: "smoke-phase4"
   });
 
