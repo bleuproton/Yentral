@@ -1,5 +1,5 @@
 import { ProductStatus } from "@prisma/client";
-import { ProductRepository } from "@/repositories/productRepository";
+import { ProductRepository } from "@/_legacy/repositories/productRepository";
 
 export class ProductService {
   constructor(private repo = new ProductRepository()) {}

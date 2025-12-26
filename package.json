@@ -28,6 +28,7 @@
     "smoke:phase2-3": "node --loader tsx src/scripts/smoke-phase2-3.ts",
     "smoke:mappings": "node --loader tsx scripts/smoke-mappings.ts",
     "smoke:phase4": "node --loader tsx scripts/smoke-phase4.ts",
+    "smoke:phase5": "node scripts/smoke-phase5.mjs",
     "smoke:fulfillment": "node --loader tsx scripts/smoke-fulfillment.ts",
     "boss:worker": "PG_BOSS_WORKER=1 tsx scripts/boss-worker.ts",
     "db:status": "prisma migrate status",

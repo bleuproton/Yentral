@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireTenantAccess } from "@/lib/tenantGuard";
 import { deliverShipmentSchema } from "@/validators/fulfillment";
-import { FulfillmentService } from "@/services/fulfillment/FulfillmentService";
+import { FulfillmentService } from "@/_legacy/services/fulfillment/FulfillmentService";
 
 const service = new FulfillmentService();
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env node --loader tsx
 import { PrismaClient, StockLedgerKind } from "@prisma/client";
 import { InventoryService } from "@/server/inventory/InventoryService";
-import { FulfillmentService } from "@/services/fulfillment/FulfillmentService";
-import { ReturnsService } from "@/services/returns/ReturnsService";
+import { FulfillmentService } from "@/_legacy/services/fulfillment/FulfillmentService";
+import { ReturnsService } from "@/_legacy/services/returns/ReturnsService";
 
 const prisma = new PrismaClient();
 const inventory = new InventoryService();

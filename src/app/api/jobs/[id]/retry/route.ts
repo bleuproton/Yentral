@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { JobService } from "@/services/jobService";
+import { JobService } from "@/_legacy/services/jobService";
 import { JobStatus } from "@prisma/client";
 
 const service = new JobService();

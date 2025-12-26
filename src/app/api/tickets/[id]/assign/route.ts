@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { TicketService } from "@/services/ticketService";
+import { TicketService } from "@/_legacy/services/ticketService";
 
 const service = new TicketService();
 

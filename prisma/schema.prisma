@@ -80,6 +80,13 @@ enum ReturnStatus {
   REJECTED
 }
 
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  VOID
+}
+
 model Tenant {
   id                     String                  @id @default(cuid())
   slug                   String                  @unique
@@ -115,6 +122,9 @@ model Tenant {
   returns                Return[]                @relation("TenantReturns")
   shipmentLines          ShipmentLine[]          @relation("TenantShipmentLines")
   returnLines            ReturnLine[]            @relation("TenantReturnLines")
+  customers              Customer[]
+  invoices               Invoice[]
+  invoiceLines           InvoiceLine[]
 }
 
 model User {
@@ -224,6 +234,7 @@ model ProductVariant {
   channelVariants   ChannelVariant[]
   shipmentLines     ShipmentLine[]
   returnLines       ReturnLine[]
+  InvoiceLine       InvoiceLine[]
 
   @@unique([tenantId, sku])
   @@unique([tenantId, id])
@@ -247,22 +258,27 @@ model InventoryItem {
 }
 
 model Order {
-  id            String         @id @default(cuid())
-  tenantId      String
-  userId        String?
-  orderNumber   Int
-  status        OrderStatus    @default(PENDING)
-  currency      String         @default("USD")
-  totalCents    Int
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  lines         OrderLine[]
-  channelOrders ChannelOrder[]
-  shipments     Shipment[]
-  returns       Return[]
+  id              String         @id @default(cuid())
+  tenantId        String
+  userId          String?
+  customerId      String?
+  orderNumber     Int
+  status          OrderStatus    @default(PENDING)
+  currency        String         @default("USD")
+  totalCents      Int
+  billingAddress  Json?
+  shippingAddress Json?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  lines           OrderLine[]
+  channelOrders   ChannelOrder[]
+  shipments       Shipment[]
+  returns         Return[]
+  customer        Customer?      @relation(fields: [tenantId, customerId], references: [tenantId, id], onDelete: SetNull)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  user   User?  @relation("UserOrders", fields: [userId], references: [id])
+  tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user    User?     @relation("UserOrders", fields: [userId], references: [id])
+  Invoice Invoice[]
 
   @@unique([tenantId, orderNumber])
   @@unique([tenantId, id])
@@ -287,6 +303,7 @@ model OrderLine {
   stockReservations StockReservation[]
   shipmentLines     ShipmentLine[]
   returnLines       ReturnLine[]
+  InvoiceLine       InvoiceLine[]
 
   @@unique([tenantId, id])
   @@index([tenantId, orderId])
@@ -371,6 +388,85 @@ model ReturnLine {
   @@index([tenantId, returnId])
 }
 
+model Customer {
+  id              String   @id @default(cuid())
+  tenantId        String
+  email           String?
+  name            String?
+  phone           String?
+  companyName     String?
+  vatNumber       String?
+  billingAddress  Json?
+  shippingAddress Json?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  orders   Order[]
+  invoices Invoice[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, email])
+  @@index([tenantId, companyName])
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  tenantId      String
+  invoiceNumber Int
+  orderId       String
+  legalEntityId String
+  taxProfileId  String?
+  status        InvoiceStatus @default(DRAFT)
+  currency      String
+  subtotalCents Int
+  taxCents      Int
+  totalCents    Int
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  paidAt        DateTime?
+  pdfUrl        String?
+  meta          Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  tenant      Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  order       Order         @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
+  legalEntity LegalEntity   @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+  taxProfile  TaxProfile?   @relation(fields: [tenantId, taxProfileId], references: [tenantId, id], onDelete: SetNull)
+  lines       InvoiceLine[]
+  Customer    Customer?     @relation(fields: [customerId], references: [id])
+  customerId  String?
+
+  @@unique([tenantId, invoiceNumber])
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+  @@index([tenantId, orderId])
+}
+
+model InvoiceLine {
+  id          String  @id @default(cuid())
+  tenantId    String
+  invoiceId   String
+  orderLineId String?
+  variantId   String?
+  description String
+  qty         Int
+  unitCents   Int
+  totalCents  Int
+  taxRateBps  Int?
+  meta        Json?
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice   Invoice         @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: Cascade)
+  orderLine OrderLine?      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: SetNull)
+  variant   ProductVariant? @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: SetNull)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, invoiceId])
+}
+
 model Plugin {
   id              String               @id @default(cuid())
   key             String               @unique
@@ -423,6 +519,7 @@ model Organization {
   legalEntities LegalEntity[]
 
   @@unique([tenantId, name])
+  @@unique([tenantId, id])
 }
 
 model LegalEntity {
@@ -439,8 +536,10 @@ model LegalEntity {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id], onDelete: Restrict)
   taxProfiles  TaxProfile[]
+  Invoice      Invoice[]
 
   @@unique([tenantId, name])
+  @@unique([tenantId, id])
   @@index([tenantId, jurisdictionId])
 }
 
@@ -458,8 +557,10 @@ model TaxProfile {
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   legalEntity  LegalEntity  @relation(fields: [legalEntityId], references: [id], onDelete: Cascade)
   jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id], onDelete: Restrict)
+  Invoice      Invoice[]
 
   @@unique([tenantId, code])
+  @@unique([tenantId, id])
   @@index([tenantId, legalEntityId])
 }
 

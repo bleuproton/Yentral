@@ -1,5 +1,5 @@
 import { OrderStatus } from "@prisma/client";
-import { OrderRepository } from "@/repositories/orderRepository";
+import { OrderRepository } from "@/_legacy/repositories/orderRepository";
 import { InventoryService } from "./inventoryService";
 
 export class OrderService {

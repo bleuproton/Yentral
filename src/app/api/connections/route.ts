@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { IntegrationConnectionRepository } from "@/repositories/integrationConnectionRepository";
+import { IntegrationConnectionRepository } from "@/_legacy/repositories/integrationConnectionRepository";
 
 const repo = new IntegrationConnectionRepository();
 

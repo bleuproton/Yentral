@@ -1,5 +1,5 @@
 import { IntegrationConnectionStatus } from "@prisma/client";
-import { IntegrationConnectionRepository } from "@/repositories/integrationConnectionRepository";
+import { IntegrationConnectionRepository } from "@/_legacy/repositories/integrationConnectionRepository";
 
 export class IntegrationService {
   constructor(private repo = new IntegrationConnectionRepository()) {}

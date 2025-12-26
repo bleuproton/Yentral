@@ -1,5 +1,5 @@
 import { JobStatus } from "@prisma/client";
-import { JobRepository } from "@/repositories/jobRepository";
+import { JobRepository } from "@/_legacy/repositories/jobRepository";
 
 export class JobService {
   constructor(private repo = new JobRepository()) {}

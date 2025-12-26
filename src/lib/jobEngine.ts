@@ -1,4 +1,4 @@
-import { JobRepository } from "@/repositories/jobRepository";
+import { JobRepository } from "@/_legacy/repositories/jobRepository";
 import type { Job } from "@prisma/client";
 
 const defaultBackoff = (attempt: number) => {

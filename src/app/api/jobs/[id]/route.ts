@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { JobRepository } from "@/repositories/jobRepository";
+import { JobRepository } from "@/_legacy/repositories/jobRepository";
 
 const repo = new JobRepository();
 

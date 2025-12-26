@@ -1,5 +1,5 @@
 import { TicketStatus } from "@prisma/client";
-import { TicketRepository } from "@/repositories/ticketRepository";
+import { TicketRepository } from "@/_legacy/repositories/ticketRepository";
 
 export class TicketService {
   constructor(private repo = new TicketRepository()) {}

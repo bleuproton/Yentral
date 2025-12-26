@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { requireTenantAccess } from "@/lib/tenantGuard";
-import { ReturnsService } from "@/services/returns/ReturnsService";
+import { ReturnsService } from "@/_legacy/services/returns/ReturnsService";
 
 const service = new ReturnsService();
 

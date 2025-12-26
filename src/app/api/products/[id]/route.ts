@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { ProductService } from "@/services/productService";
+import { ProductService } from "@/_legacy/services/productService";
 import { ProductStatus } from "@prisma/client";
 
 const service = new ProductService();

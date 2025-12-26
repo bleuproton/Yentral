@@ -151,6 +151,70 @@ async function main() {
   });
   console.log("✅ Admin user: admin@yentral.test / changeme123 (role OWNER)");
 
+  console.log("➡️  Seeding customer/order/invoice demo");
+  const customer = await prisma.customer.upsert({
+    where: { tenantId_email: { tenantId: tenant.id, email: "customer@yentral.test" } },
+    update: { name: "Demo Customer" },
+    create: { tenantId: tenant.id, email: "customer@yentral.test", name: "Demo Customer" }
+  });
+  const product = await prisma.product.upsert({
+    where: { tenantId_sku: { tenantId: tenant.id, sku: "SEED-P1" } },
+    update: {},
+    create: { tenantId: tenant.id, sku: "SEED-P1", name: "Seed Product", priceCents: 1000 }
+  });
+  const variant = await prisma.productVariant.upsert({
+    where: { tenantId_sku: { tenantId: tenant.id, sku: "SEED-P1-V1" } },
+    update: {},
+    create: { tenantId: tenant.id, productId: product.id, sku: "SEED-P1-V1" }
+  });
+  const order = await prisma.order.create({
+    data: {
+      tenantId: tenant.id,
+      customerId: customer.id,
+      orderNumber: 5001,
+      currency: "EUR",
+      totalCents: 1000
+    }
+  });
+  const orderLine = await prisma.orderLine.create({
+    data: {
+      tenantId: tenant.id,
+      orderId: order.id,
+      productId: product.id,
+      variantId: variant.id,
+      quantity: 1,
+      unitCents: 1000,
+      totalCents: 1000
+    }
+  });
+  await prisma.invoice.create({
+    data: {
+      tenantId: tenant.id,
+      invoiceNumber: 1,
+      orderId: order.id,
+      legalEntityId: legalEntityMap.values().next().value,
+      taxProfileId: null,
+      status: "DRAFT",
+      currency: "EUR",
+      subtotalCents: 1000,
+      taxCents: 0,
+      totalCents: 1000,
+      lines: {
+        create: [
+          {
+            tenantId: tenant.id,
+            orderLineId: orderLine.id,
+            description: "Seed line",
+            qty: 1,
+            unitCents: 1000,
+            totalCents: 1000
+          }
+        ]
+      }
+    }
+  });
+  console.log("✅ Seed invoice created");
+
   console.log("🎉 Seed complete");
 }
 
