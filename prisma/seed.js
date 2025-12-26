@@ -167,8 +167,11 @@ async function main() {
     update: {},
     create: { tenantId: tenant.id, productId: product.id, sku: "SEED-P1-V1" }
   });
-  const order = await prisma.order.create({
-    data: {
+  const order = await prisma.order.upsert({
+    where: { id: "seed-order" },
+    update: {},
+    create: {
+      id: "seed-order",
       tenantId: tenant.id,
       customerId: customer.id,
       orderNumber: 5001,
@@ -176,8 +179,11 @@ async function main() {
       totalCents: 1000
     }
   });
-  const orderLine = await prisma.orderLine.create({
-    data: {
+  const orderLine = await prisma.orderLine.upsert({
+    where: { id: "seed-orderline" },
+    update: {},
+    create: {
+      id: "seed-orderline",
       tenantId: tenant.id,
       orderId: order.id,
       productId: product.id,
@@ -202,7 +208,6 @@ async function main() {
       lines: {
         create: [
           {
-            tenantId: tenant.id,
             orderLineId: orderLine.id,
             description: "Seed line",
             qty: 1,
