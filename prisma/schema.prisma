@@ -111,10 +111,10 @@ model Tenant {
   channelProducts        ChannelProduct[]
   channelVariants        ChannelVariant[]
   channelOrders          ChannelOrder[]
-  shipments              Shipment[]
-  returns                Return[]
-  shipmentLines          ShipmentLine[]
-  returnLines            ReturnLine[]
+  shipments              Shipment[]              @relation("TenantShipments")
+  returns                Return[]                @relation("TenantReturns")
+  shipmentLines          ShipmentLine[]          @relation("TenantShipmentLines")
+  returnLines            ReturnLine[]            @relation("TenantReturnLines")
 }
 
 model User {
@@ -306,7 +306,7 @@ model Shipment {
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant         @relation("TenantShipments", fields: [tenantId], references: [id], onDelete: Cascade)
   order     Order          @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
   warehouse Warehouse      @relation(fields: [tenantId, warehouseId], references: [tenantId, id], onDelete: Restrict)
   lines     ShipmentLine[]
@@ -324,7 +324,7 @@ model ShipmentLine {
   qty         Int
   createdAt   DateTime @default(now())
 
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant         @relation("TenantShipmentLines", fields: [tenantId], references: [id], onDelete: Cascade)
   shipment  Shipment       @relation(fields: [tenantId, shipmentId], references: [tenantId, id], onDelete: Cascade)
   orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Restrict)
   variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)
@@ -344,12 +344,11 @@ model Return {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
-  tenant Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant       @relation("TenantReturns", fields: [tenantId], references: [id], onDelete: Cascade)
   order  Order        @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: Cascade)
   lines  ReturnLine[]
 
   @@unique([tenantId, id])
-  @@unique([tenantId, orderId, id])
   @@index([tenantId, orderId])
 }
 
@@ -363,7 +362,7 @@ model ReturnLine {
   condition   String?
   createdAt   DateTime @default(now())
 
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant         @relation("TenantReturnLines", fields: [tenantId], references: [id], onDelete: Cascade)
   return    Return         @relation(fields: [tenantId, returnId], references: [tenantId, id], onDelete: Cascade)
   orderLine OrderLine      @relation(fields: [tenantId, orderLineId], references: [tenantId, id], onDelete: Restrict)
   variant   ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Restrict)

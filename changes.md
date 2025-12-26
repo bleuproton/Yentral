@@ -17,3 +17,8 @@
 - 2025-12-25: Phase 4 tenant-safety fixes: strengthened Shipment/Return uniques, made StockReservation relations tenant-scoped with composite FKs (updated migration SQL and applied to DB), and revalidated Prisma schema.
 - 2025-12-25: Phase 2/3 services finalized: InventoryService now accepts explicit ledger kind and tenant-safe ops; mapping, channel catalog, and channel order services aligned; added tenant-safe smoke test `src/scripts/smoke-phase2-3.ts` and updated `smoke:phase2-3` script.
 - 2025-12-25: README enhanced with product overview and ordered roadmap (tenant enforcement, IMAP/SMTP/SLA, billing webhooks, plugin UI first, inventory deprecation, fulfillment providers, and UX/UI sequencing).
+- 2025-12-25: Phase 4 validation fixes: explicit relation names for Tenant ↔ ShipmentLine/ReturnLine, removed redundant Return unique, added migration `20251225190000_phase4_fulfillment_relations` (unique keys on tenantId/id for lines/stock reservations); prisma format/validate clean.
+- 2025-12-25: Added server-side inventory layer (repositories + InventoryService) with tenant-filtered transactions and smoke script `scripts/smoke-inventory.ts` for adjust/reserve/release/consume flows.
+- 2025-12-25: Added Phase 3 integration mapping services (MappingService, ChannelCatalogService, ChannelOrderService) and smoke `scripts/smoke-mappings.ts` for warehouse/product/variant/order mappings.
+- 2025-12-25: Added Phase 4 FulfillmentService (shipments/returns) with tenant-safe transactions and smoke script `scripts/smoke-fulfillment.ts`; includes reservation consumption on ship and restock on return.
+- 2025-12-25: Added DB verification script `scripts/db-verify.mjs` (migration status + tenant safety checks) and wired npm script `db:verify`.
