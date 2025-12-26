@@ -1,0 +1,18 @@
+0 verbose cli /opt/homebrew/Cellar/node/22.9.0_1/bin/node /opt/homebrew/lib/node_modules/npm/bin/npm-cli.js
+1 info using npm@10.8.3
+2 info using node@v22.9.0
+3 silly config load:file:/opt/homebrew/lib/node_modules/npm/npmrc
+4 silly config load:file:/Users/gregorygilds/Documents/Yentral/.npmrc
+5 silly config load:file:/Users/gregorygilds/Documents/Yentral/.home/.npmrc
+6 silly config load:file:/opt/homebrew/etc/npmrc
+7 verbose title npm exec prisma migrate status
+8 verbose argv "exec" "--" "prisma" "migrate" "status"
+9 verbose logfile logs-max:10 dir:/Users/gregorygilds/Documents/Yentral/.home/.npm/_logs/2025-12-26T21_54_26_286Z-
+10 verbose logfile /Users/gregorygilds/Documents/Yentral/.home/.npm/_logs/2025-12-26T21_54_26_286Z-debug-0.log
+11 silly logfile done cleaning log files
+12 verbose cwd /Users/gregorygilds/Documents/Yentral
+13 verbose os Darwin 24.4.0
+14 verbose node v22.9.0
+15 verbose npm  v10.8.3
+16 verbose exit 0
+17 info ok

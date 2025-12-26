@@ -1,0 +1,53 @@
+{
+  "last_reminder": 1766786054579,
+  "cached_at": 1766786042278,
+  "version": "5.22.0",
+  "cli_path": "/Users/gregorygilds/Documents/Yentral/node_modules/prisma/build/index.js",
+  "output": {
+    "product": "prisma",
+    "previous_version": "5.22.0",
+    "checkpoint_version": 4,
+    "local_timestamp_without_timezone": "2025-12-26T22:54:01Z",
+    "current_version": "7.2.0",
+    "current_release_date": 1765983962,
+    "client_event_id": "004f4592-04d2-4b67-b3d9-543cabb5f395",
+    "current_download_url": "https://github.com/prisma/prisma",
+    "package": "prisma",
+    "release_tag": "latest",
+    "install_command": "npm install --save-dev prisma",
+    "schema_providers": [
+      "postgresql"
+    ],
+    "schema_preview_features": [],
+    "schema_generators_providers": [
+      "prisma-client-js"
+    ],
+    "current_changelog_url": "https://github.com/prisma/prisma",
+    "outdated": true,
+    "project_website": "https://prisma.io",
+    "alerts": []
+  },
+  "product": "prisma",
+  "cli_install_type": "local",
+  "local_timestamp": "2025-12-26T22:54:27+01:00",
+  "project_hash": "f36da074",
+  "cli_path_hash": "23dfcd69",
+  "endpoint": "https://checkpoint.prisma.io",
+  "arch": "arm64",
+  "os": "darwin",
+  "node_version": "v22.9.0",
+  "command": "migrate status",
+  "schema_providers": [
+    "postgresql"
+  ],
+  "schema_preview_features": [],
+  "schema_generators_providers": [
+    "prisma-client-js"
+  ],
+  "cache_file": "/Users/gregorygilds/Documents/Yentral/.home/Library/Caches/checkpoint-nodejs/prisma-23dfcd69",
+  "cache_duration": 43200000,
+  "remind_duration": 172800000,
+  "timeout": 5000,
+  "unref": true,
+  "child_path": "/Users/gregorygilds/Documents/Yentral/node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/child"
+}

@@ -1,0 +1,86 @@
+-- Ensure composite tenantId/id uniques for parent tables
+CREATE UNIQUE INDEX IF NOT EXISTS "Product_tenantId_id_key" ON "Product"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "Order_tenantId_id_key" ON "Order"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "OrderLine_tenantId_id_key" ON "OrderLine"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "ProductVariant_tenantId_id_key" ON "ProductVariant"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "Warehouse_tenantId_id_key" ON "Warehouse"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "Organization_tenantId_id_key" ON "Organization"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "LegalEntity_tenantId_id_key" ON "LegalEntity"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "TaxProfile_tenantId_id_key" ON "TaxProfile"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "IntegrationConnection_tenantId_id_key" ON "IntegrationConnection"("tenantId", "id");
+CREATE UNIQUE INDEX IF NOT EXISTS "Job_tenantId_id_key" ON "Job"("tenantId", "id");
+
+-- Drop old single-column FKs (if present)
+ALTER TABLE "ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_productId_fkey";
+ALTER TABLE "InventoryItem" DROP CONSTRAINT IF EXISTS "InventoryItem_productId_fkey";
+ALTER TABLE "OrderLine" DROP CONSTRAINT IF EXISTS "OrderLine_orderId_fkey";
+ALTER TABLE "OrderLine" DROP CONSTRAINT IF EXISTS "OrderLine_productId_fkey";
+ALTER TABLE "OrderLine" DROP CONSTRAINT IF EXISTS "OrderLine_variantId_fkey";
+ALTER TABLE "StockLedger" DROP CONSTRAINT IF EXISTS "StockLedger_warehouseId_fkey";
+ALTER TABLE "StockLedger" DROP CONSTRAINT IF EXISTS "StockLedger_variantId_fkey";
+ALTER TABLE "StockSnapshot" DROP CONSTRAINT IF EXISTS "StockSnapshot_warehouseId_fkey";
+ALTER TABLE "StockSnapshot" DROP CONSTRAINT IF EXISTS "StockSnapshot_variantId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_orderLineId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_warehouseId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_variantId_fkey";
+ALTER TABLE "WarehouseMapping" DROP CONSTRAINT IF EXISTS "WarehouseMapping_connectionId_fkey";
+ALTER TABLE "WarehouseMapping" DROP CONSTRAINT IF EXISTS "WarehouseMapping_warehouseId_fkey";
+ALTER TABLE "ChannelProduct" DROP CONSTRAINT IF EXISTS "ChannelProduct_connectionId_fkey";
+ALTER TABLE "ChannelProduct" DROP CONSTRAINT IF EXISTS "ChannelProduct_productId_fkey";
+ALTER TABLE "ChannelVariant" DROP CONSTRAINT IF EXISTS "ChannelVariant_connectionId_fkey";
+ALTER TABLE "ChannelVariant" DROP CONSTRAINT IF EXISTS "ChannelVariant_variantId_fkey";
+ALTER TABLE "ChannelOrder" DROP CONSTRAINT IF EXISTS "ChannelOrder_connectionId_fkey";
+ALTER TABLE "ChannelOrder" DROP CONSTRAINT IF EXISTS "ChannelOrder_orderId_fkey";
+ALTER TABLE "LegalEntity" DROP CONSTRAINT IF EXISTS "LegalEntity_organizationId_fkey";
+ALTER TABLE "TaxProfile" DROP CONSTRAINT IF EXISTS "TaxProfile_legalEntityId_fkey";
+ALTER TABLE "JobRun" DROP CONSTRAINT IF EXISTS "JobRun_jobId_fkey";
+
+-- Drop any prior composite FKs to avoid duplicates
+ALTER TABLE "ProductVariant" DROP CONSTRAINT IF EXISTS "ProductVariant_tenantId_productId_fkey";
+ALTER TABLE "InventoryItem" DROP CONSTRAINT IF EXISTS "InventoryItem_tenantId_productId_fkey";
+ALTER TABLE "OrderLine" DROP CONSTRAINT IF EXISTS "OrderLine_tenantId_orderId_fkey";
+ALTER TABLE "OrderLine" DROP CONSTRAINT IF EXISTS "OrderLine_tenantId_productId_fkey";
+ALTER TABLE "OrderLine" DROP CONSTRAINT IF EXISTS "OrderLine_tenantId_variantId_fkey";
+ALTER TABLE "StockLedger" DROP CONSTRAINT IF EXISTS "StockLedger_tenantId_warehouseId_fkey";
+ALTER TABLE "StockLedger" DROP CONSTRAINT IF EXISTS "StockLedger_tenantId_variantId_fkey";
+ALTER TABLE "StockSnapshot" DROP CONSTRAINT IF EXISTS "StockSnapshot_tenantId_warehouseId_fkey";
+ALTER TABLE "StockSnapshot" DROP CONSTRAINT IF EXISTS "StockSnapshot_tenantId_variantId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_tenantId_orderLineId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_tenantId_warehouseId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_tenantId_variantId_fkey";
+ALTER TABLE "WarehouseMapping" DROP CONSTRAINT IF EXISTS "WarehouseMapping_tenantId_connectionId_fkey";
+ALTER TABLE "WarehouseMapping" DROP CONSTRAINT IF EXISTS "WarehouseMapping_tenantId_warehouseId_fkey";
+ALTER TABLE "ChannelProduct" DROP CONSTRAINT IF EXISTS "ChannelProduct_tenantId_connectionId_fkey";
+ALTER TABLE "ChannelProduct" DROP CONSTRAINT IF EXISTS "ChannelProduct_tenantId_productId_fkey";
+ALTER TABLE "ChannelVariant" DROP CONSTRAINT IF EXISTS "ChannelVariant_tenantId_connectionId_fkey";
+ALTER TABLE "ChannelVariant" DROP CONSTRAINT IF EXISTS "ChannelVariant_tenantId_variantId_fkey";
+ALTER TABLE "ChannelOrder" DROP CONSTRAINT IF EXISTS "ChannelOrder_tenantId_connectionId_fkey";
+ALTER TABLE "ChannelOrder" DROP CONSTRAINT IF EXISTS "ChannelOrder_tenantId_orderId_fkey";
+ALTER TABLE "LegalEntity" DROP CONSTRAINT IF EXISTS "LegalEntity_tenantId_organizationId_fkey";
+ALTER TABLE "TaxProfile" DROP CONSTRAINT IF EXISTS "TaxProfile_tenantId_legalEntityId_fkey";
+ALTER TABLE "JobRun" DROP CONSTRAINT IF EXISTS "JobRun_tenantId_jobId_fkey";
+
+-- Add tenant-scoped FKs
+ALTER TABLE "ProductVariant" ADD CONSTRAINT "ProductVariant_tenantId_productId_fkey" FOREIGN KEY ("tenantId", "productId") REFERENCES "Product"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "InventoryItem" ADD CONSTRAINT "InventoryItem_tenantId_productId_fkey" FOREIGN KEY ("tenantId", "productId") REFERENCES "Product"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_tenantId_orderId_fkey" FOREIGN KEY ("tenantId", "orderId") REFERENCES "Order"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_tenantId_productId_fkey" FOREIGN KEY ("tenantId", "productId") REFERENCES "Product"("tenantId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "OrderLine" ADD CONSTRAINT "OrderLine_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "StockLedger" ADD CONSTRAINT "StockLedger_tenantId_warehouseId_fkey" FOREIGN KEY ("tenantId", "warehouseId") REFERENCES "Warehouse"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockLedger" ADD CONSTRAINT "StockLedger_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockSnapshot" ADD CONSTRAINT "StockSnapshot_tenantId_warehouseId_fkey" FOREIGN KEY ("tenantId", "warehouseId") REFERENCES "Warehouse"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockSnapshot" ADD CONSTRAINT "StockSnapshot_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_orderLineId_fkey" FOREIGN KEY ("tenantId", "orderLineId") REFERENCES "OrderLine"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_warehouseId_fkey" FOREIGN KEY ("tenantId", "warehouseId") REFERENCES "Warehouse"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "WarehouseMapping" ADD CONSTRAINT "WarehouseMapping_tenantId_connectionId_fkey" FOREIGN KEY ("tenantId", "connectionId") REFERENCES "IntegrationConnection"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "WarehouseMapping" ADD CONSTRAINT "WarehouseMapping_tenantId_warehouseId_fkey" FOREIGN KEY ("tenantId", "warehouseId") REFERENCES "Warehouse"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChannelProduct" ADD CONSTRAINT "ChannelProduct_tenantId_connectionId_fkey" FOREIGN KEY ("tenantId", "connectionId") REFERENCES "IntegrationConnection"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChannelProduct" ADD CONSTRAINT "ChannelProduct_tenantId_productId_fkey" FOREIGN KEY ("tenantId", "productId") REFERENCES "Product"("tenantId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ChannelVariant" ADD CONSTRAINT "ChannelVariant_tenantId_connectionId_fkey" FOREIGN KEY ("tenantId", "connectionId") REFERENCES "IntegrationConnection"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChannelVariant" ADD CONSTRAINT "ChannelVariant_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "ChannelOrder" ADD CONSTRAINT "ChannelOrder_tenantId_connectionId_fkey" FOREIGN KEY ("tenantId", "connectionId") REFERENCES "IntegrationConnection"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ChannelOrder" ADD CONSTRAINT "ChannelOrder_tenantId_orderId_fkey" FOREIGN KEY ("tenantId", "orderId") REFERENCES "Order"("tenantId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "LegalEntity" ADD CONSTRAINT "LegalEntity_tenantId_organizationId_fkey" FOREIGN KEY ("tenantId", "organizationId") REFERENCES "Organization"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "TaxProfile" ADD CONSTRAINT "TaxProfile_tenantId_legalEntityId_fkey" FOREIGN KEY ("tenantId", "legalEntityId") REFERENCES "LegalEntity"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "JobRun" ADD CONSTRAINT "JobRun_tenantId_jobId_fkey" FOREIGN KEY ("tenantId", "jobId") REFERENCES "Job"("tenantId", "id") ON DELETE SET NULL ON UPDATE CASCADE;

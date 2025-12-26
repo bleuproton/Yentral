@@ -1,0 +1,19 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+a {
+  color: #38bdf8;
+}
+
+code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+}
