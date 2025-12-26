@@ -1,9 +1,9 @@
 #!/usr/bin/env tsx
-import { ConnectorType, PrismaClient } from "@prisma/client";
-import { InventoryService } from "@/server/services/InventoryService";
-import { MappingService } from "@/server/services/MappingService";
-import { ChannelCatalogService } from "@/server/services/ChannelCatalogService";
-import { ChannelOrderService } from "@/server/services/ChannelOrderService";
+import { ConnectorType, PrismaClient, StockLedgerKind } from "@prisma/client";
+import { InventoryService } from "@/server/inventory/InventoryService";
+import { MappingService } from "@/server/integrations/MappingService";
+import { ChannelCatalogService } from "@/server/integrations/ChannelCatalogService";
+import { ChannelOrderService } from "@/server/integrations/ChannelOrderService";
 
 const prisma = new PrismaClient();
 
@@ -109,10 +109,11 @@ async function main() {
     warehouseId: warehouse.id,
     variantId: variant.id,
     qtyDelta: 10,
+    kind: StockLedgerKind.RECEIPT,
     reason: "seed"
   });
 
-  const res1 = await inventory.reserveStock({
+  const res1 = await inventory.reserve({
     tenantId: tenant.id,
     orderLineId: orderLine.id,
     warehouseId: warehouse.id,
@@ -120,7 +121,7 @@ async function main() {
     qty: 2,
     dedupeKey: "r1"
   });
-  const res2 = await inventory.reserveStock({
+  const res2 = await inventory.reserve({
     tenantId: tenant.id,
     orderLineId: orderLine.id,
     warehouseId: warehouse.id,
@@ -128,7 +129,7 @@ async function main() {
     qty: 2,
     dedupeKey: "r1"
   });
-  await inventory.consumeReservation(tenant.id, res1.reservation.id);
+  await inventory.consumeReservation({ tenantId: tenant.id, reservationId: res1.reservation.id });
 
   await mapping.upsertWarehouseMapping(tenant.id, connection.id, "EXT_LOC_1", warehouse.id);
   const resolvedWh = await mapping.resolveWarehouse(tenant.id, connection.id, "EXT_LOC_1");

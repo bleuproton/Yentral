@@ -184,11 +184,22 @@ ALTER TABLE "ReturnLine" ADD CONSTRAINT "ReturnLine_tenantId_orderLineId_fkey" F
 -- AddForeignKey
 ALTER TABLE "ReturnLine" ADD CONSTRAINT "ReturnLine_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_orderLineId_fkey" FOREIGN KEY ("tenantId", "orderLineId") REFERENCES "OrderLine"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+-- Tenant-safe StockReservation FKs
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_orderLineId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_warehouseId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_variantId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_tenantId_orderLineId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_tenantId_warehouseId_fkey";
+ALTER TABLE "StockReservation" DROP CONSTRAINT IF EXISTS "StockReservation_tenantId_variantId_fkey";
 
--- AddForeignKey
-ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_warehouseId_fkey" FOREIGN KEY ("tenantId", "warehouseId") REFERENCES "Warehouse"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_orderLineId_fkey"
+  FOREIGN KEY ("tenantId", "orderLineId") REFERENCES "OrderLine"("tenantId", "id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
-ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_variantId_fkey" FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_warehouseId_fkey"
+  FOREIGN KEY ("tenantId", "warehouseId") REFERENCES "Warehouse"("tenantId", "id")
+  ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "StockReservation" ADD CONSTRAINT "StockReservation_tenantId_variantId_fkey"
+  FOREIGN KEY ("tenantId", "variantId") REFERENCES "ProductVariant"("tenantId", "id")
+  ON DELETE CASCADE ON UPDATE CASCADE;

@@ -22,3 +22,6 @@
 - 2025-12-25: Added Phase 3 integration mapping services (MappingService, ChannelCatalogService, ChannelOrderService) and smoke `scripts/smoke-mappings.ts` for warehouse/product/variant/order mappings.
 - 2025-12-25: Added Phase 4 FulfillmentService (shipments/returns) with tenant-safe transactions and smoke script `scripts/smoke-fulfillment.ts`; includes reservation consumption on ship and restock on return.
 - 2025-12-25: Added DB verification script `scripts/db-verify.mjs` (migration status + tenant safety checks) and wired npm script `db:verify`.
+- 2025-12-25: Phase 2/3 alignment: inventory/mapping/channel services now use server Prisma singleton with tenant filters; updated smoke `scripts/smoke-phase2-3.ts` to match new service signatures.
+- 2025-12-25: Fulfillment/returns reimplemented with tenant-safe services (`src/server/services/fulfillment/*`) and shared inventory mutations; new smoke `scripts/smoke-phase4.ts` using tsx loader.
+- 2025-12-25: Phase 4 API/services: added tenant-scoped FulfillmentService/ReturnsService with audit logging, validation schemas, tenant guard, and App Router endpoints under `/api/tenant/[tenantId]/shipments|returns`; updated smoke-phase4 to cover ship/deliver/return/refund.

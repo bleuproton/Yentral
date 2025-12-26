@@ -1,5 +1,5 @@
 import { Prisma, ReservationStatus, StockLedgerKind } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import prisma from "@/server/db/prisma";
 import { StockLedgerRepository } from "../repositories/StockLedgerRepository";
 import { StockSnapshotRepository } from "../repositories/StockSnapshotRepository";
 import { StockReservationRepository } from "../repositories/StockReservationRepository";

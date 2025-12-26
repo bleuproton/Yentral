@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import prisma from "@/server/db/prisma";
 
 export class StockLedgerRepository {
   constructor(private readonly db: Prisma.TransactionClient | typeof prisma = prisma) {}

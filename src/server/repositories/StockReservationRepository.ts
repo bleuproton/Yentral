@@ -1,5 +1,5 @@
 import { Prisma, ReservationStatus } from "@prisma/client";
-import prisma from "@/lib/prisma";
+import prisma from "@/server/db/prisma";
 
 export class StockReservationRepository {
   constructor(private readonly db: Prisma.TransactionClient | typeof prisma = prisma) {}
@@ -32,16 +32,13 @@ export class StockReservationRepository {
   }
 
   updateStatus(tenantId: string, reservationId: string, status: ReservationStatus) {
-    return this.db.stockReservation.update({
-      where: { id: reservationId },
-      data: { status },
-      select: { id: true, status: true, qty: true, warehouseId: true, variantId: true }
+    return this.db.stockReservation.updateMany({
+      where: { id: reservationId, tenantId },
+      data: { status }
     });
   }
 
   getById(tenantId: string, reservationId: string) {
-    return this.db.stockReservation.findFirst({
-      where: { id: reservationId, tenantId }
-    });
+    return this.db.stockReservation.findFirst({ where: { id: reservationId, tenantId } });
   }
 }
