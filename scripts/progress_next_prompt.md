@@ -1,0 +1,1 @@
+Fix failing checks from progress:check (schema phases, migration structure, verify/health/smokes) before proceeding.

@@ -25,12 +25,12 @@
     "db:reset": "prisma migrate reset",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
-    "smoke:phase2-3": "node --loader tsx src/scripts/smoke-phase2-3.ts",
+    "smoke:phase2-3": "tsx scripts/smoke.ts phase2-3",
     "smoke:mappings": "node --loader tsx scripts/smoke-mappings.ts",
-    "smoke:phase4": "node --loader tsx scripts/smoke-phase4.ts",
-    "smoke:phase5": "node scripts/smoke-phase5.mjs",
-    "smoke:phase6": "npx tsx scripts/smoke-phase6.ts",
-    "smoke:fulfillment": "node --loader tsx scripts/smoke-fulfillment.ts",
+    "smoke:phase4": "tsx scripts/smoke.ts phase4",
+    "smoke:phase5": "tsx scripts/smoke.ts phase5",
+    "smoke:phase6": "tsx scripts/smoke.ts phase6",
+    "smoke:fulfillment": "tsx scripts/smoke.ts fulfillment",
     "boss:worker": "PG_BOSS_WORKER=1 tsx scripts/boss-worker.ts",
     "db:status": "prisma migrate status",
     "db:validate": "prisma validate",
@@ -40,7 +40,8 @@
     "db:health": "tsx scripts/db_health.ts",
     "migrate:make": "tsx scripts/make_migration_from_diff.ts",
     "migrate:deploy": "npx prisma migrate deploy",
-    "prisma:generate": "npx prisma generate"
+    "prisma:generate": "npx prisma generate",
+    "progress:check": "tsx scripts/progress_check.ts"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

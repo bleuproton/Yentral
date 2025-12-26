@@ -1,0 +1,411 @@
+import { PrismaClient, StockLedgerKind, ReservationStatus, ShipmentStatus, ReturnStatus, EmailDirection } from '@prisma/client';
+import {
+  getOrCreateTenant,
+  getOrCreateJurisdiction,
+  getOrCreateOrganization,
+  getOrCreateLegalEntity,
+  getOrCreateTaxProfile,
+  getOrCreateWarehouse,
+  getOrCreateProduct,
+  getOrCreateVariant,
+  getOrCreateCustomer,
+  getOrCreateConnectorAndVersion,
+  getOrCreateConnection,
+} from './smoke_helpers';
+
+const prisma = new PrismaClient();
+
+function fail(msg: string): never {
+  throw new Error(msg);
+}
+
+async function ensureBaseOrder(prisma: PrismaClient, tenantId: string) {
+  const product = await getOrCreateProduct(prisma, tenantId, 'SMOKE-P1');
+  const variant = await getOrCreateVariant(prisma, tenantId, product.id, 'SMOKE-P1-V1');
+  const order = await prisma.order.upsert({
+    where: { tenantId_orderNumber: { tenantId, orderNumber: 9001 } },
+    update: {},
+    create: { tenantId, orderNumber: 9001, currency: 'EUR', totalCents: 1000 },
+  });
+  const orderLine = await prisma.orderLine.upsert({
+    where: { id: 'smoke-orderline' },
+    update: { tenantId, orderId: order.id, productId: product.id, variantId: variant.id, quantity: 1, unitCents: 1000, totalCents: 1000 },
+    create: {
+      id: 'smoke-orderline',
+      tenantId,
+      orderId: order.id,
+      productId: product.id,
+      variantId: variant.id,
+      quantity: 1,
+      unitCents: 1000,
+      totalCents: 1000,
+    },
+  });
+  return { product, variant, order, orderLine };
+}
+
+async function suitePhase2_3() {
+  const tenant = await getOrCreateTenant(prisma);
+  const { product, variant, order, orderLine } = await ensureBaseOrder(prisma, tenant.id);
+  const warehouse = await getOrCreateWarehouse(prisma, tenant.id, 'SMOKE-WH');
+
+  await prisma.stockLedger.create({
+    data: {
+      tenantId: tenant.id,
+      warehouseId: warehouse.id,
+      variantId: variant.id,
+      qtyDelta: 10,
+      kind: StockLedgerKind.ADJUST,
+    },
+  });
+
+  await prisma.stockSnapshot.upsert({
+    where: { tenantId_warehouseId_variantId: { tenantId: tenant.id, warehouseId: warehouse.id, variantId: variant.id } },
+    update: { onHand: 10, reserved: 0, available: 10 },
+    create: { tenantId: tenant.id, warehouseId: warehouse.id, variantId: variant.id, onHand: 10, reserved: 0, available: 10 },
+  });
+
+  await prisma.stockReservation.upsert({
+    where: { tenantId_dedupeKey: { tenantId: tenant.id, dedupeKey: 'smoke-resv' } },
+    update: { orderLineId: orderLine.id, warehouseId: warehouse.id, variantId: variant.id, qty: 2, status: ReservationStatus.ACTIVE },
+    create: {
+      tenantId: tenant.id,
+      orderLineId: orderLine.id,
+      warehouseId: warehouse.id,
+      variantId: variant.id,
+      qty: 2,
+      status: ReservationStatus.ACTIVE,
+      dedupeKey: 'smoke-resv',
+    },
+  });
+
+  const { version } = await getOrCreateConnectorAndVersion(prisma, 'smoke-connector', '1.0.0');
+  const connection = await getOrCreateConnection(prisma, tenant.id, version.id, 'Smoke Connection');
+
+  await prisma.warehouseMapping.upsert({
+    where: {
+      tenantId_connectionId_externalLocationId: {
+        tenantId: tenant.id,
+        connectionId: connection.id,
+        externalLocationId: 'ext-loc-1',
+      },
+    },
+    update: { warehouseId: warehouse.id },
+    create: {
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      externalLocationId: 'ext-loc-1',
+      warehouseId: warehouse.id,
+    },
+  });
+
+  await prisma.channelProduct.upsert({
+    where: {
+      tenantId_connectionId_externalId: { tenantId: tenant.id, connectionId: connection.id, externalId: 'ext-prod-1' },
+    },
+    update: { productId: product.id },
+    create: {
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      externalId: 'ext-prod-1',
+      productId: product.id,
+      raw: {},
+    },
+  });
+
+  await prisma.channelVariant.upsert({
+    where: {
+      tenantId_connectionId_externalId: { tenantId: tenant.id, connectionId: connection.id, externalId: 'ext-var-1' },
+    },
+    update: { variantId: variant.id },
+    create: {
+      tenantId: tenant.id,
+      connectionId: connection.id,
+      externalId: 'ext-var-1',
+      variantId: variant.id,
+      raw: {},
+    },
+  });
+
+  await prisma.channelOrder.upsert({
+    where: {
+      tenantId_connectionId_externalOrderId: { tenantId: tenant.id, connectionId: connection.id, externalOrderId: 'ext-order-1' },
+    },
+    update: { orderId: order.id, raw: {} },
+    create: { tenantId: tenant.id, connectionId: connection.id, externalOrderId: 'ext-order-1', orderId: order.id, raw: {} },
+  });
+
+  const channelVariants = await prisma.channelVariant.findMany({ where: { tenantId: tenant.id, connectionId: connection.id } });
+  if (channelVariants.length === 0) fail('Phase2-3: channelVariant not found');
+}
+
+async function suitePhase4() {
+  const tenant = await getOrCreateTenant(prisma);
+  const { variant, order, orderLine } = await ensureBaseOrder(prisma, tenant.id);
+  const warehouse = await getOrCreateWarehouse(prisma, tenant.id, 'SMOKE-WH');
+
+  const shipment = await prisma.shipment.upsert({
+    where: { id: 'smoke-shipment' },
+    update: { tenantId: tenant.id, orderId: order.id, warehouseId: warehouse.id, status: ShipmentStatus.CREATED },
+    create: { id: 'smoke-shipment', tenantId: tenant.id, orderId: order.id, warehouseId: warehouse.id, status: ShipmentStatus.CREATED },
+  });
+
+  await prisma.shipmentLine.upsert({
+    where: { id: 'smoke-shipment-line' },
+    update: { tenantId: tenant.id, shipmentId: shipment.id, orderLineId: orderLine.id, variantId: variant.id, qty: 1 },
+    create: {
+      id: 'smoke-shipment-line',
+      tenantId: tenant.id,
+      shipmentId: shipment.id,
+      orderLineId: orderLine.id,
+      variantId: variant.id,
+      qty: 1,
+    },
+  });
+
+  const ret = await prisma.return.upsert({
+    where: { id: 'smoke-return' },
+    update: { tenantId: tenant.id, orderId: order.id, status: ReturnStatus.REQUESTED },
+    create: { id: 'smoke-return', tenantId: tenant.id, orderId: order.id, status: ReturnStatus.REQUESTED },
+  });
+  await prisma.returnLine.upsert({
+    where: { id: 'smoke-return-line' },
+    update: { tenantId: tenant.id, returnId: ret.id, orderLineId: orderLine.id, variantId: variant.id, qty: 1 },
+    create: {
+      id: 'smoke-return-line',
+      tenantId: tenant.id,
+      returnId: ret.id,
+      orderLineId: orderLine.id,
+      variantId: variant.id,
+      qty: 1,
+    },
+  });
+
+  const count = await prisma.shipmentLine.count({ where: { tenantId: tenant.id, shipmentId: shipment.id } });
+  const rcount = await prisma.returnLine.count({ where: { tenantId: tenant.id, returnId: ret.id } });
+  if (count === 0 || rcount === 0) fail('Phase4: shipment or return lines missing');
+}
+
+async function suitePhase5() {
+  const tenant = await getOrCreateTenant(prisma);
+  const jurisdiction = await getOrCreateJurisdiction(prisma, 'EU');
+  const org = await getOrCreateOrganization(prisma, tenant.id, 'Smoke Org');
+  const le = await getOrCreateLegalEntity(prisma, tenant.id, org.id, jurisdiction.id, 'Smoke LE');
+  await getOrCreateTaxProfile(prisma, tenant.id, le.id, jurisdiction.id, 'SMOKE_TP');
+  const customer = await getOrCreateCustomer(prisma, tenant.id, 'smoke@example.com');
+  const { variant, order, orderLine } = await ensureBaseOrder(prisma, tenant.id);
+
+  const invoice = await prisma.invoice.upsert({
+    where: { tenantId_invoiceNumber: { tenantId: tenant.id, invoiceNumber: 9001 } },
+    update: { legalEntityId: le.id, customerId: customer.id },
+    create: {
+      tenantId: tenant.id,
+      invoiceNumber: 9001,
+      orderId: order.id,
+      legalEntityId: le.id,
+      customerId: customer.id,
+      status: 'DRAFT',
+      currency: 'EUR',
+      subtotalCents: 1000,
+      taxCents: 0,
+      totalCents: 1000,
+    },
+  });
+
+  await prisma.invoiceLine.upsert({
+    where: { id: 'smoke-invoiceline' },
+    update: {
+      tenantId: tenant.id,
+      invoiceId: invoice.id,
+      orderLineId: orderLine.id,
+      variantId: variant.id,
+      description: 'Smoke line',
+      qty: 1,
+      unitCents: 1000,
+      totalCents: 1000,
+    },
+    create: {
+      id: 'smoke-invoiceline',
+      tenantId: tenant.id,
+      invoiceId: invoice.id,
+      orderLineId: orderLine.id,
+      variantId: variant.id,
+      description: 'Smoke line',
+      qty: 1,
+      unitCents: 1000,
+      totalCents: 1000,
+    },
+  });
+
+  const inv = await prisma.invoice.findUnique({
+    where: { tenantId_invoiceNumber: { tenantId: tenant.id, invoiceNumber: 9001 } },
+    include: { lines: true },
+  });
+  if (!inv || inv.lines.length === 0) fail('Phase5: invoice or lines missing');
+}
+
+async function suitePhase6() {
+  const tenant = await getOrCreateTenant(prisma);
+  const mailbox = await prisma.mailbox.upsert({
+    where: { tenantId_inboundAddress: { tenantId: tenant.id, inboundAddress: 'smoke-inbound@example.com' } },
+    update: { name: 'Smoke Mailbox' },
+    create: { tenantId: tenant.id, name: 'Smoke Mailbox', inboundAddress: 'smoke-inbound@example.com' },
+  });
+  const user = await prisma.user.upsert({
+    where: { email: 'smoke-user@yentral.test' },
+    update: { name: 'Smoke User' },
+    create: { email: 'smoke-user@yentral.test', name: 'Smoke User' },
+  });
+  const ticket = await prisma.ticket.upsert({
+    where: { id: 'smoke-ticket' },
+    update: { tenantId: tenant.id, authorId: user.id, title: 'Smoke Ticket', description: 'Smoke', status: 'OPEN' },
+    create: {
+      id: 'smoke-ticket',
+      tenantId: tenant.id,
+      authorId: user.id,
+      title: 'Smoke Ticket',
+      description: 'Smoke',
+      status: 'OPEN',
+    },
+  });
+  const thread = await prisma.emailThread.upsert({
+    where: { id: 'smoke-thread' },
+    update: { tenantId: tenant.id, mailboxId: mailbox.id, subject: 'Smoke Thread' },
+    create: { id: 'smoke-thread', tenantId: tenant.id, mailboxId: mailbox.id, subject: 'Smoke Thread' },
+  });
+  await prisma.ticket.update({
+    where: { id: ticket.id },
+    data: { emailThreadId: thread.id },
+  });
+
+  await prisma.emailMessage.upsert({
+    where: { id: 'smoke-email-in' },
+    update: {
+      tenantId: tenant.id,
+      threadId: thread.id,
+      direction: EmailDirection.INBOUND,
+      from: { addr: 'customer@example.com' },
+      to: { addr: mailbox.inboundAddress },
+    },
+    create: {
+      id: 'smoke-email-in',
+      tenantId: tenant.id,
+      threadId: thread.id,
+      direction: EmailDirection.INBOUND,
+      from: { addr: 'customer@example.com' },
+      to: { addr: mailbox.inboundAddress },
+    },
+  });
+  await prisma.emailMessage.upsert({
+    where: { id: 'smoke-email-out' },
+    update: {
+      tenantId: tenant.id,
+      threadId: thread.id,
+      direction: EmailDirection.OUTBOUND,
+      from: { addr: mailbox.inboundAddress },
+      to: { addr: 'customer@example.com' },
+    },
+    create: {
+      id: 'smoke-email-out',
+      tenantId: tenant.id,
+      threadId: thread.id,
+      direction: EmailDirection.OUTBOUND,
+      from: { addr: mailbox.inboundAddress },
+      to: { addr: 'customer@example.com' },
+    },
+  });
+
+  const msgs = await prisma.emailMessage.count({ where: { tenantId: tenant.id, threadId: thread.id } });
+  const ticketReload = await prisma.ticket.findUnique({ where: { id: ticket.id } });
+  if (msgs < 2 || !ticketReload?.emailThreadId) fail('Phase6: messages or ticket link missing');
+}
+
+async function suiteFulfillment() {
+  const tenant = await getOrCreateTenant(prisma);
+  const warehouse = await getOrCreateWarehouse(prisma, tenant.id, 'SMOKE-WH');
+  const { variant, order, orderLine } = await ensureBaseOrder(prisma, tenant.id);
+  await prisma.stockReservation.upsert({
+    where: { tenantId_dedupeKey: { tenantId: tenant.id, dedupeKey: 'smoke-fulfill-resv' } },
+    update: { orderLineId: orderLine.id, warehouseId: warehouse.id, variantId: variant.id, qty: 1, status: ReservationStatus.ACTIVE },
+    create: {
+      tenantId: tenant.id,
+      orderLineId: orderLine.id,
+      warehouseId: warehouse.id,
+      variantId: variant.id,
+      qty: 1,
+      status: ReservationStatus.ACTIVE,
+      dedupeKey: 'smoke-fulfill-resv',
+    },
+  });
+  const resv = await prisma.stockReservation.findUnique({
+    where: { tenantId_dedupeKey: { tenantId: tenant.id, dedupeKey: 'smoke-fulfill-resv' } },
+  });
+  if (!resv) fail('Fulfillment: reservation missing');
+
+  await prisma.shipment.upsert({
+    where: { id: 'smoke-ship-fulfill' },
+    update: { tenantId: tenant.id, orderId: order.id, warehouseId: warehouse.id, status: ShipmentStatus.SHIPPED },
+    create: {
+      id: 'smoke-ship-fulfill',
+      tenantId: tenant.id,
+      orderId: order.id,
+      warehouseId: warehouse.id,
+      status: ShipmentStatus.SHIPPED,
+    },
+  });
+  await prisma.shipmentLine.upsert({
+    where: { id: 'smoke-shipline-fulfill' },
+    update: { tenantId: tenant.id, shipmentId: 'smoke-ship-fulfill', orderLineId: orderLine.id, variantId: variant.id, qty: 1 },
+    create: {
+      id: 'smoke-shipline-fulfill',
+      tenantId: tenant.id,
+      shipmentId: 'smoke-ship-fulfill',
+      orderLineId: orderLine.id,
+      variantId: variant.id,
+      qty: 1,
+    },
+  });
+  await prisma.stockReservation.update({
+    where: { tenantId_dedupeKey: { tenantId: tenant.id, dedupeKey: 'smoke-fulfill-resv' } },
+    data: { status: ReservationStatus.CONSUMED },
+  });
+
+  const shipLineCount = await prisma.shipmentLine.count({
+    where: { tenantId: tenant.id, shipmentId: 'smoke-ship-fulfill' },
+  });
+  if (shipLineCount === 0) fail('Fulfillment: shipment line missing');
+}
+
+async function main() {
+  const suite = process.argv[2];
+  if (!suite) fail('Pass suite name (phase2-3|phase4|phase5|phase6|fulfillment)');
+  try {
+    switch (suite) {
+      case 'phase2-3':
+        await suitePhase2_3();
+        break;
+      case 'phase4':
+        await suitePhase4();
+        break;
+      case 'phase5':
+        await suitePhase5();
+        break;
+      case 'phase6':
+        await suitePhase6();
+        break;
+      case 'fulfillment':
+        await suiteFulfillment();
+        break;
+      default:
+        fail(`Unknown suite ${suite}`);
+    }
+    console.log('SMOKE PASS');
+  } catch (err: any) {
+    console.error('SMOKE FAIL', err?.message ?? err);
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main();
