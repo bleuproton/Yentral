@@ -35,7 +35,8 @@
     "db:status": "prisma migrate status",
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
-    "state:check": "tsx scripts/state-check.ts"
+    "state:check": "tsx scripts/state-check.ts",
+    "phase6:verify": "tsx scripts/phase6_verify.ts"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

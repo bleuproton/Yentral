@@ -835,6 +835,7 @@ model JobRun {
 
   @@index([status])
   @@index([tenantId, jobName])
+  @@index([tenantId, jobId])
 }
 
 model AuditEvent {
