@@ -143,6 +143,9 @@ model Tenant {
   mailboxes              Mailbox[]
   emailThreads           EmailThread[]
   emailMessages          EmailMessage[]
+  mediaAssets            MediaAsset[]
+  productMedia           ProductMedia[]
+  variantMedia           VariantMedia[]
 }
 
 model User {
@@ -226,6 +229,7 @@ model Product {
   orderLines      OrderLine[]
   variants        ProductVariant[]
   channelProducts ChannelProduct[]
+  productMedia    ProductMedia[]
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -253,10 +257,66 @@ model ProductVariant {
   shipmentLines     ShipmentLine[]
   returnLines       ReturnLine[]
   InvoiceLine       InvoiceLine[]
+  variantMedia      VariantMedia[]
 
   @@unique([tenantId, sku])
   @@unique([tenantId, id])
   @@index([tenantId, productId])
+}
+
+model MediaAsset {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  provider  String
+  mimeType  String?
+  sizeBytes Int?
+  width     Int?
+  height    Int?
+  checksum  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant       Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productMedia ProductMedia[]
+  variantMedia VariantMedia[]
+
+  @@index([tenantId, checksum])
+  @@unique([tenantId, id])
+}
+
+model ProductMedia {
+  id        String   @id @default(cuid())
+  tenantId  String
+  productId String
+  assetId   String
+  sortOrder Int      @default(0)
+  altText   String?
+  createdAt DateTime @default(now())
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product  @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: Cascade)
+  asset   MediaAsset @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, productId, assetId])
+  @@unique([tenantId, id])
+}
+
+model VariantMedia {
+  id        String   @id @default(cuid())
+  tenantId  String
+  variantId String
+  assetId   String
+  sortOrder Int      @default(0)
+  altText   String?
+  createdAt DateTime @default(now())
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [tenantId, variantId], references: [tenantId, id], onDelete: Cascade)
+  asset   MediaAsset     @relation(fields: [tenantId, assetId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, variantId, assetId])
+  @@unique([tenantId, id])
 }
 
 model InventoryItem {

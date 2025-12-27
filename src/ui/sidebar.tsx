@@ -5,20 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const links = [
-  { href: '/', label: 'Overview' },
-  { href: '/catalog', label: 'Catalog' },
+  { href: '/dashboard', label: 'Overview' },
+  { href: '/products', label: 'Products' },
   { href: '/inventory', label: 'Inventory' },
   { href: '/orders', label: 'Orders' },
   { href: '/fulfillment', label: 'Fulfillment' },
-  { href: '/returns', label: 'Returns' },
   { href: '/customers', label: 'Customers' },
   { href: '/invoices', label: 'Invoices' },
   { href: '/integrations', label: 'Integrations' },
-  { href: '/jobs', label: 'Jobs' },
-  { href: '/tickets', label: 'Tickets' },
-  { href: '/email', label: 'Email' },
-  { href: '/marketplace', label: 'Marketplace' },
-  { href: '/ai-studio', label: 'AI Studio' },
+  { href: '/support', label: 'Support' },
   { href: '/settings', label: 'Settings' },
 ];
 

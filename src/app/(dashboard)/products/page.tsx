@@ -1,31 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/apiClient';
-
-type Product = { id: string; sku: string; name: string; status?: string; priceCents?: number; currency?: string };
-
-function getTenantId(): string | null {
-  if (typeof document === 'undefined') return null;
-  const m = document.cookie.match(/(?:^|;\s*)tenantId=([^;]+)/);
-  return m ? decodeURIComponent(m[1]) : null;
-}
+import { useProducts } from '@/client/hooks/useProducts';
 
 export default function ProductsPage() {
-  const [items, setItems] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const tenantId = getTenantId();
-
-  useEffect(() => {
-    if (!tenantId) return;
-    setLoading(true);
-    apiFetch(`/api/tenants/${tenantId}/products`)
-      .then((res) => setItems(res?.data ?? []))
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [tenantId]);
+  const { items, loading, error } = useProducts();
 
   return (
     <div className="space-y-4">
@@ -49,7 +28,7 @@ export default function ProductsPage() {
             </tr>
           </thead>
           <tbody>
-            {items.map((p) => (
+            {items.map((p: any) => (
               <tr key={p.id} className="border-t hover:bg-gray-50 text-sm">
                 <td className="px-3 py-2">
                   <Link className="text-blue-600" href={`/products/${p.id}`}>

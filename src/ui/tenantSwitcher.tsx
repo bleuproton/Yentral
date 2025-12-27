@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { apiFetch } from '@/lib/apiClient';
+import { apiClientFetch } from '@/client/api';
 
 type Membership = { tenantId: string; tenant: { name: string; slug: string } };
 
@@ -12,7 +12,7 @@ export function TenantSwitcher() {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    apiFetch('/api/tenants/me/memberships')
+    apiClientFetch('/api/tenants/me/memberships')
       .then((res) => {
         if (!mounted) return;
         setMemberships(res?.data ?? []);
@@ -24,8 +24,11 @@ export function TenantSwitcher() {
     };
   }, []);
 
-  const setTenant = async (tenantId: string) => {
-    await apiFetch('/api/tenant/switch', {
+  const setTenant = async (tenantId: string, slug: string | undefined) => {
+    if (typeof window !== 'undefined' && slug) {
+      window.localStorage.setItem('tenantSlug', slug);
+    }
+    await apiClientFetch('/api/tenant/switch', {
       method: 'POST',
       body: JSON.stringify({ tenantId }),
     });
@@ -35,7 +38,10 @@ export function TenantSwitcher() {
   return (
     <select
       className="border rounded px-2 py-1 text-sm"
-      onChange={(e) => setTenant(e.target.value)}
+      onChange={(e) => {
+        const [tenantId, slug] = e.target.value.split('::');
+        setTenant(tenantId, slug);
+      }}
       defaultValue=""
       disabled={loading}
     >
@@ -43,7 +49,7 @@ export function TenantSwitcher() {
         {loading ? 'Loading...' : 'Select tenant'}
       </option>
       {memberships.map((m) => (
-        <option key={m.tenantId} value={m.tenantId}>
+        <option key={m.tenantId} value={`${m.tenantId}::${m.tenant.slug ?? ''}`}>
           {m.tenant.name}
         </option>
       ))}

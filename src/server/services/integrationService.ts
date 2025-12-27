@@ -10,6 +10,7 @@ import {
 } from '../schemas/integration';
 import { IntegrationRepository } from '../repositories/integrationRepository';
 import { writeAudit } from '../audit/audit';
+import { encryptJson } from '../security/crypto';
 
 export class IntegrationService {
   constructor(private prisma: PrismaClient, private tenantId: string, private actorUserId: string) {}
@@ -35,6 +36,9 @@ export class IntegrationService {
 
   async updateConnection(id: string, input: unknown) {
     const data = IntegrationUpdateSchema.parse(input);
+    if (data.config?.secrets) {
+      data.config.secrets = encryptJson(data.config.secrets);
+    }
     const conn = await this.repo().updateConnection(id, data);
     await writeAudit(this.tenantId, this.actorUserId, 'integration.update', 'IntegrationConnection', conn.id, data);
     return conn;

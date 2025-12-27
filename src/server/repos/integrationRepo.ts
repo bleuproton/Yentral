@@ -38,4 +38,13 @@ export class IntegrationRepo {
       })
     );
   }
+
+  async updateConnectionSyncState(ctx: RequestContext, id: string, data: { lastSyncAt?: Date | null; lastError?: string | null }) {
+    return withContext(ctx, () =>
+      prisma.integrationConnection.update({
+        where: { tenantId_id: { tenantId: ctx.tenantId, id } },
+        data: { lastSyncAt: data.lastSyncAt ?? undefined, lastError: data.lastError ?? undefined },
+      })
+    );
+  }
 }

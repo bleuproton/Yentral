@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { apiFetch } from '@/lib/apiClient';
 
 function getTenantId(): string | null {
   if (typeof document === 'undefined') return null;
-  const m = document.cookie.match(/(?:^|;\\s*)tenantId=([^;]+)/);
+  const m = document.cookie.match(/(?:^|;\s*)tenantId=([^;]+)/);
   return m ? decodeURIComponent(m[1]) : null;
 }
 
@@ -14,41 +14,26 @@ export default function ProductDetailPage({ params }: { params: { productId: str
   const tenantId = getTenantId();
   const [product, setProduct] = useState<any>(null);
   const [variants, setVariants] = useState<any[]>([]);
-  const [media, setMedia] = useState<any[]>([]);
   const [form, setForm] = useState<any>({});
   const [variantForm, setVariantForm] = useState<any>({});
-  const [mediaForm, setMediaForm] = useState<any>({});
-  const [tab, setTab] = useState<'details' | 'variants' | 'channel' | 'media'>('details');
+  const [tab, setTab] = useState<'details' | 'variants' | 'channel'>('details');
   const [msg, setMsg] = useState<string | null>(null);
-
-  const loadCore = async () => {
-    if (!tenantId) return;
-    const p = await apiFetch(`/api/tenants/${tenantId}/products/${params.productId}`);
-    setProduct(p?.data);
-    setForm({
-      name: p?.data?.name ?? '',
-      description: p?.data?.description ?? '',
-      priceCents: p?.data?.priceCents ?? 0,
-      currency: p?.data?.currency ?? 'EUR',
-      status: p?.data?.status ?? '',
-    });
-    const v = await apiFetch(`/api/tenants/${tenantId}/products/${params.productId}/variants`);
-    setVariants(v?.data ?? []);
-  };
-
-  const loadMedia = async () => {
-    try {
-      const res = await apiFetch(`/api/products/${params.productId}/media`);
-      setMedia(res?.data ?? []);
-    } catch {
-      setMedia([]);
-    }
-  };
 
   useEffect(() => {
     if (!tenantId) return;
-    loadCore();
-    loadMedia();
+    apiFetch(`/api/tenants/${tenantId}/products/${params.productId}`).then((res) => {
+      setProduct(res?.data);
+      setForm({
+        name: res?.data?.name ?? '',
+        description: res?.data?.description ?? '',
+        priceCents: res?.data?.priceCents ?? 0,
+        currency: res?.data?.currency ?? 'EUR',
+        status: res?.data?.status ?? '',
+      });
+    });
+    apiFetch(`/api/tenants/${tenantId}/products/${params.productId}/variants`).then((res) => {
+      setVariants(res?.data ?? []);
+    });
   }, [tenantId, params.productId]);
 
   const save = async () => {
@@ -72,21 +57,6 @@ export default function ProductDetailPage({ params }: { params: { productId: str
     setMsg('Variant added');
   };
 
-  const attachMedia = async () => {
-    const asset = await apiFetch(`/api/media`, { method: 'POST', body: JSON.stringify(mediaForm) });
-    await apiFetch(`/api/products/${params.productId}/media`, {
-      method: 'POST',
-      body: JSON.stringify({
-        assetId: asset?.data?.id,
-        altText: mediaForm.altText || '',
-        sortOrder: mediaForm.sortOrder || 0,
-      }),
-    });
-    await loadMedia();
-    setMediaForm({});
-    setMsg('Media attached');
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -100,9 +70,6 @@ export default function ProductDetailPage({ params }: { params: { productId: str
           </button>
           <button onClick={() => setTab('channel')} className={tab === 'channel' ? 'font-semibold' : ''}>
             Channel mappings
-          </button>
-          <button onClick={() => setTab('media')} className={tab === 'media' ? 'font-semibold' : ''}>
-            Media
           </button>
         </div>
       </div>
@@ -144,7 +111,7 @@ export default function ProductDetailPage({ params }: { params: { productId: str
               </tr>
             </thead>
             <tbody>
-              {variants.map((v: any) => (
+              {variants.map((v) => (
                 <tr key={v.id} className="border-t text-sm">
                   <td className="px-3 py-2">{v.sku}</td>
                   <td className="px-3 py-2">{v.ean || '-'}</td>
@@ -156,42 +123,6 @@ export default function ProductDetailPage({ params }: { params: { productId: str
       )}
       {tab === 'channel' && (
         <div className="bg-white p-4 rounded border text-sm text-gray-600">Channel mappings: use integration routes to link products/variants.</div>
-      )}
-      {tab === 'media' && (
-        <div className="space-y-3">
-          <div className="bg-white p-3 rounded border">
-            <div className="font-semibold mb-2">Attach media</div>
-            <div className="grid grid-cols-2 gap-2">
-              <Input label="URL" value={mediaForm.url || ''} onChange={(v) => setMediaForm({ ...mediaForm, url: v })} />
-              <Input label="Provider" value={mediaForm.provider || ''} onChange={(v) => setMediaForm({ ...mediaForm, provider: v })} />
-              <Input label="Alt text" value={mediaForm.altText || ''} onChange={(v) => setMediaForm({ ...mediaForm, altText: v })} />
-              <Input
-                label="Sort order"
-                type="number"
-                value={mediaForm.sortOrder || 0}
-                onChange={(v) => setMediaForm({ ...mediaForm, sortOrder: Number(v) })}
-              />
-            </div>
-            <button onClick={attachMedia} className="mt-2 px-3 py-1 bg-blue-600 text-white rounded text-sm">
-              Attach
-            </button>
-          </div>
-          <div className="bg-white p-3 rounded border">
-            <div className="font-semibold mb-2">Media</div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {media.map((m: any) => (
-                <div key={m.id} className="border rounded p-2 text-sm space-y-1">
-                  <div className="truncate">
-                    <Link className="text-blue-600" href={m.asset?.url} target="_blank">
-                      {m.asset?.url}
-                    </Link>
-                  </div>
-                  {m.altText && <div className="text-gray-600 text-xs">Alt: {m.altText}</div>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

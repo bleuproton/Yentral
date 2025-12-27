@@ -501,6 +501,76 @@ async function main() {
         if (!refreshed || refreshed.status !== 'COMPLETED') fail('Phase7b: job not completed');
         if (!run) fail('Phase7b: jobRun missing');
         break;
+      case 'phase7c':
+        await suitePhase7a();
+        const tenantC = await getOrCreateTenant(prisma);
+        const connector = await prisma.connector.upsert({
+          where: { key: 'mock-shopify' },
+          update: { name: 'Mock Shopify' },
+          create: { key: 'mock-shopify', name: 'Mock Shopify', type: 'CHANNEL' },
+        });
+        const version = await prisma.connectorVersion.upsert({
+          where: { connectorId_version: { connectorId: connector.id, version: '1.0.0' } },
+          update: {},
+          create: { connectorId: connector.id, version: '1.0.0' },
+        });
+        const connection = await prisma.integrationConnection.upsert({
+          where: { id: 'smoke-conn-mock-shopify' },
+          update: { tenantId: tenantC.id, connectorVersionId: version.id, status: 'ACTIVE' },
+          create: { id: 'smoke-conn-mock-shopify', tenantId: tenantC.id, connectorVersionId: version.id, status: 'ACTIVE' },
+        });
+        const { runSync: runSync7c } = await import('../src/server/integrations/syncEngine');
+        await runSync7c({ tenantId: tenantC.id, connectionId: connection.id, scope: 'catalog' });
+        await runSync7c({ tenantId: tenantC.id, connectionId: connection.id, scope: 'orders' });
+        const cps = await prisma.channelProduct.count({ where: { tenantId: tenantC.id, connectionId: connection.id } });
+        const cvs = await prisma.channelVariant.count({ where: { tenantId: tenantC.id, connectionId: connection.id } });
+        const cos = await prisma.channelOrder.count({ where: { tenantId: tenantC.id, connectionId: connection.id } });
+        if (cps === 0 || cvs === 0 || cos === 0) fail('Phase7c: mappings not created');
+        break;
+      case 'phase9':
+        if (!process.env.ENCRYPTION_KEY) {
+          process.env.ENCRYPTION_KEY = Buffer.alloc(32, 1).toString('base64');
+        }
+        await suitePhase7a();
+        const tenant9 = await getOrCreateTenant(prisma);
+        const connector9 = await prisma.connector.upsert({
+          where: { key: 'mock-shopify' },
+          update: { name: 'Mock Shopify' },
+          create: { key: 'mock-shopify', name: 'Mock Shopify', type: 'CHANNEL' },
+        });
+        const version9 = await prisma.connectorVersion.upsert({
+          where: { connectorId_version: { connectorId: connector9.id, version: '1.0.0' } },
+          update: {},
+          create: { connectorId: connector9.id, version: '1.0.0' },
+        });
+        const connection9 = await prisma.integrationConnection.upsert({
+          where: { id: 'smoke-conn-shopify' },
+          update: {
+            tenantId: tenant9.id,
+            connectorVersionId: version9.id,
+            status: 'ACTIVE',
+            config: { shopDomain: 'demo.myshopify.com', adminAccessToken: 'test' },
+          },
+          create: {
+            id: 'smoke-conn-shopify',
+            tenantId: tenant9.id,
+            connectorVersionId: version9.id,
+            status: 'ACTIVE',
+            config: { shopDomain: 'demo.myshopify.com', adminAccessToken: 'test' },
+          },
+        });
+        // Secrets should be encrypted via service; simulate by encryptJson/decryptJson
+        const { encryptJson, decryptJson } = await import('../src/server/security/crypto');
+        const enc = encryptJson({ token: 'secret' });
+        const dec = decryptJson(enc);
+        if (dec.token !== 'secret') fail('Phase9: encryption failed');
+        // Use mock runtime via registry
+        const { runSync } = await import('../src/server/integrations/syncEngine');
+        await runSync({ tenantId: tenant9.id, connectionId: connection9.id, scope: 'catalog' });
+        await runSync({ tenantId: tenant9.id, connectionId: connection9.id, scope: 'orders' });
+        const mappingCount = await prisma.channelVariant.count({ where: { tenantId: tenant9.id, connectionId: connection9.id } });
+        if (mappingCount === 0) fail('Phase9: channel variants missing');
+        break;
       case 'worker':
         await suiteWorker();
         break;

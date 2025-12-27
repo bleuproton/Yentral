@@ -1,39 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useIntegrations } from '@/client/hooks/useIntegrations';
-import { apiClientFetch } from '@/client/api';
+import { apiFetch } from '@/lib/apiClient';
+
+function getTenantId(): string | null {
+  if (typeof document === 'undefined') return null;
+  const m = document.cookie.match(/(?:^|;\s*)tenantId=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 
 export default function IntegrationsPage() {
-  const { items: connections, loading, error, reload } = useIntegrations();
+  const tenantId = getTenantId();
   const [connectors, setConnectors] = useState<any[]>([]);
+  const [connections, setConnections] = useState<any[]>([]);
   const [form, setForm] = useState<any>({});
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    apiClientFetch('/api/connectors').then((res) => setConnectors(res?.data ?? []));
+    apiFetch('/api/connectors').then((res) => setConnectors(res?.data ?? []));
   }, []);
 
+  useEffect(() => {
+    if (!tenantId) return;
+    apiFetch(`/api/tenants/${tenantId}/integrations`).then((res) => setConnections(res?.data ?? []));
+  }, [tenantId]);
+
   const createConnection = async () => {
-    await apiClientFetch(`/api/integrations`, {
+    if (!tenantId) return;
+    await apiFetch(`/api/tenants/${tenantId}/integrations`, {
       method: 'POST',
       body: JSON.stringify(form),
     });
-    reload();
+    const res = await apiFetch(`/api/tenants/${tenantId}/integrations`);
+    setConnections(res?.data ?? []);
     setMsg('Connection created');
-  };
-
-  const triggerSync = async (id: string) => {
-    await apiClientFetch(`/api/integrations/${id}/sync`, { method: 'POST', body: JSON.stringify({ scope: 'catalog' }) });
-    reload();
-    setMsg('Sync started');
   };
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Integrations</h1>
       {msg && <div className="text-green-700 text-sm">{msg}</div>}
-      {error && <div className="text-red-600 text-sm">{error}</div>}
       <section className="bg-white p-4 rounded border">
         <h2 className="font-semibold mb-2">Marketplace</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
@@ -59,36 +65,24 @@ export default function IntegrationsPage() {
       </section>
       <section className="bg-white p-4 rounded border">
         <h2 className="font-semibold mb-2">Connections</h2>
-        {loading ? (
-          <div>Loading...</div>
-        ) : (
-          <table className="min-w-full text-sm border">
-            <thead>
-              <tr className="bg-gray-50 text-gray-700">
-                <th className="px-2 py-1 text-left">Name</th>
-                <th className="px-2 py-1 text-left">Region</th>
-                <th className="px-2 py-1 text-left">Status</th>
-                <th className="px-2 py-1 text-left">Last Sync</th>
-                <th className="px-2 py-1 text-left">Actions</th>
+        <table className="min-w-full text-sm border">
+          <thead>
+            <tr className="bg-gray-50 text-gray-700">
+              <th className="px-2 py-1 text-left">Name</th>
+              <th className="px-2 py-1 text-left">Region</th>
+              <th className="px-2 py-1 text-left">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {connections.map((c) => (
+              <tr key={c.id} className="border-t">
+                <td className="px-2 py-1">{c.name || c.id}</td>
+                <td className="px-2 py-1">{c.region || '-'}</td>
+                <td className="px-2 py-1">{c.status}</td>
               </tr>
-            </thead>
-            <tbody>
-              {connections.map((c: any) => (
-                <tr key={c.id} className="border-t">
-                  <td className="px-2 py-1">{c.name || c.id}</td>
-                  <td className="px-2 py-1">{c.region || '-'}</td>
-                  <td className="px-2 py-1">{c.status}</td>
-                  <td className="px-2 py-1">{c.lastSyncAt ? new Date(c.lastSyncAt).toLocaleString() : '-'}</td>
-                  <td className="px-2 py-1">
-                    <button className="px-2 py-1 text-sm bg-blue-600 text-white rounded" onClick={() => triggerSync(c.id)}>
-                      Sync
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
       </section>
     </div>
   );
