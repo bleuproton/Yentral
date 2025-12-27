@@ -1,6 +1,6 @@
 import { forbidden } from '@/lib/httpErrors';
 
-export type Role = 'OWNER' | 'ADMIN' | 'MEMBER';
+export type Role = 'OWNER' | 'ADMIN' | 'MEMBER' | 'ACCOUNTANT_ADMIN' | 'ACCOUNTANT_READONLY';
 
 export type RequestContext = {
   tenantId: string;

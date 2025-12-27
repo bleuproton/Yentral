@@ -56,7 +56,8 @@
     "migrate:make": "tsx scripts/make_migration_from_diff.ts",
     "migrate:deploy": "npx prisma migrate deploy",
     "phase7a:check": "prisma validate && npm run phase6:verify && npm run db:health",
-    "progress:check": "tsx scripts/progress_check.ts"
+    "progress:check": "tsx scripts/progress_check.ts",
+    "smoke:accountant": "tsx scripts/smoke.ts accountant"
   },
   "dependencies": {
     "@next-auth/prisma-adapter": "^1.0.7",

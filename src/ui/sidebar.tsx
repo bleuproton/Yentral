@@ -3,22 +3,25 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+type RoleKey = 'OWNER' | 'ADMIN' | 'ACCOUNTANT_ADMIN' | 'ACCOUNTANT_READONLY' | 'MEMBER' | 'ACCOUNTANT';
 
 const links = [
-  { href: '/dashboard', label: 'Overview', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT'] },
-  { href: '/dashboard/pim', label: 'PIM', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/inventory', label: 'Inventory', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/orders', label: 'Orders', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/fulfillment', label: 'Fulfillment', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/accounting', label: 'Accounting', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT'] },
-  { href: '/dashboard/reports', label: 'Reports', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT'] },
-  { href: '/dashboard/automations', label: 'Automations', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/integrations', label: 'Integrations', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/support', label: 'Support', roles: ['OWNER', 'ADMIN'] },
-  { href: '/dashboard/settings', label: 'Settings', roles: ['OWNER', 'ADMIN'] },
+  { href: '/dashboard', label: 'Overview', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT_ADMIN', 'ACCOUNTANT_READONLY', 'MEMBER'] },
+  { href: '/products', label: 'Products', roles: ['OWNER', 'ADMIN'] },
+  { href: '/inventory', label: 'Inventory', roles: ['OWNER', 'ADMIN'] },
+  { href: '/orders', label: 'Orders', roles: ['OWNER', 'ADMIN'] },
+  { href: '/fulfillment', label: 'Fulfillment', roles: ['OWNER', 'ADMIN'] },
+  { href: '/customers', label: 'Customers', roles: ['OWNER', 'ADMIN'] },
+  { href: '/invoices', label: 'Invoices', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT_ADMIN', 'ACCOUNTANT_READONLY'] },
+  { href: '/integrations', label: 'Integrations', roles: ['OWNER', 'ADMIN'] },
+  { href: '/support', label: 'Support', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT_ADMIN', 'ACCOUNTANT_READONLY'] },
+  { href: '/accountant', label: 'Accountant', roles: ['OWNER', 'ADMIN', 'ACCOUNTANT_ADMIN', 'ACCOUNTANT_READONLY'] },
+  { href: '/settings', label: 'Settings', roles: ['OWNER', 'ADMIN'] },
 ];
 
-async function fetchRole(): Promise<string | null> {
+async function fetchRole(): Promise<RoleKey | null> {
   try {
     const res = await fetch('/api/me');
     if (!res.ok) return null;
@@ -29,13 +32,14 @@ async function fetchRole(): Promise<string | null> {
   }
 }
 
-export function Sidebar() {
+export function Sidebar({ role: roleProp }: { role?: RoleKey }) {
   const pathname = usePathname();
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<RoleKey | null>(roleProp ?? null);
 
   useEffect(() => {
+    if (roleProp) return;
     fetchRole().then(setRole).catch(() => {});
-  }, []);
+  }, [roleProp]);
 
   return (
     <aside className="w-56 border-r min-h-screen p-4">

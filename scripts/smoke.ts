@@ -455,6 +455,44 @@ async function suiteWorker() {
   await suitePhase7();
 }
 
+async function suiteAccountant() {
+  const tenant = await getOrCreateTenant(prisma);
+  const user = await prisma.user.upsert({
+    where: { email: 'accountant@yentral.test' },
+    update: {},
+    create: { email: 'accountant@yentral.test', name: 'Accountant' },
+  });
+  await prisma.membership.upsert({
+    where: { userId_tenantId: { tenantId: tenant.id, userId: user.id } },
+    update: { role: 'ACCOUNTANT_ADMIN' },
+    create: { tenantId: tenant.id, userId: user.id, role: 'ACCOUNTANT_ADMIN' },
+  });
+  const report = await prisma.reportExport.create({
+    data: {
+      tenantId: tenant.id,
+      type: 'GL_JOURNAL',
+      periodStart: new Date(),
+      periodEnd: new Date(),
+      status: 'PENDING',
+    },
+  });
+  const job = await prisma.job.create({
+    data: {
+      tenantId: tenant.id,
+      type: 'EXPORT_GL',
+      payload: { reportExportId: report.id },
+      status: 'PENDING',
+      maxAttempts: 1,
+    },
+  });
+  const { getProcessor } = await import('../src/server/jobs/processors');
+  const handler = getProcessor('EXPORT_GL');
+  if (!handler) fail('EXPORT_GL handler missing');
+  await handler(job as any);
+  const refreshed = await prisma.reportExport.findUnique({ where: { id: report.id } });
+  if (!refreshed || refreshed.status !== 'COMPLETED') fail('Accountant: export not completed');
+}
+
 async function suitePhase7a() {
   const tenantA = await prisma.tenant.upsert({
     where: { slug: 'smoke-a' },
@@ -501,7 +539,7 @@ async function suitePhase7a() {
 
 async function main() {
   const suite = process.argv[2];
-  if (!suite) fail('Pass suite name (phase7a|phase2-3|phase4|phase5|phase6|fulfillment|phase7|worker)');
+  if (!suite) fail('Pass suite name (phase7a|phase2-3|phase4|phase5|phase6|fulfillment|phase7|worker|accountant)');
   try {
     switch (suite) {
       case 'phase7a':
@@ -559,7 +597,7 @@ async function main() {
         const runner = await import('./worker_flows');
         await runner.processOnce();
         const completedRun = await prisma.flowRun.findUnique({
-          where: { tenantId_id: { tenantId: tenantFlow.id, id: run.id } },
+          where: { tenantId_id: { tenantId: tenantFlow.id, id: flowRun2.id } },
           include: { steps: true },
         });
         if (!completedRun || completedRun.status !== 'COMPLETED') fail('flows-runtime: run not completed');
@@ -697,6 +735,9 @@ async function main() {
         await vsvc.buildVatTransactions(ctxO as any);
         const report = await vsvc.generateOssReport(ctxO as any, new Date(), new Date());
         if (!report) fail('OSS report missing');
+        break;
+      case 'accountant':
+        await suiteAccountant();
         break;
       default:
         fail(`Unknown suite ${suite}`);

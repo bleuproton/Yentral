@@ -11,6 +11,8 @@ enum Role {
   OWNER
   ADMIN
   MEMBER
+  ACCOUNTANT_ADMIN
+  ACCOUNTANT_READONLY
 }
 
 enum ProductStatus {
@@ -380,6 +382,9 @@ enum ReportExportType {
   LOCAL_VAT
   EPR
   GL_EXPORT
+  VAT_OSS
+  GL_JOURNAL
+  INVOICE_LIST
 }
 
 model Flow {

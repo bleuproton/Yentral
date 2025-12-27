@@ -48,7 +48,32 @@ const registry: Record<string, Processor> = {
       metadata: { ok: true },
     });
   },
+  EXPORT_VAT_OSS: async (job: Job) => exportReport(job),
+  EXPORT_GL: async (job: Job) => exportReport(job),
+  EXPORT_INVOICES: async (job: Job) => exportReport(job),
 };
+
+async function exportReport(job: Job) {
+  if (!job.tenantId) throw new Error('tenantId required');
+  const payload: any = job.payload || {};
+  const reportId = payload.reportExportId;
+  if (!reportId) throw new Error('reportExportId required');
+  const db = tenantDb(job.tenantId);
+  await db.reportExport.updateMany({
+    where: { tenantId: job.tenantId, id: reportId },
+    data: {
+      status: 'COMPLETED',
+      outputUrl: `generated://${job.type}/${reportId}`,
+      meta: { jobId: job.id, type: job.type },
+    },
+  });
+  await writeAuditEvent({
+    tenantId: job.tenantId,
+    action: 'report.export.completed',
+    resourceType: 'ReportExport',
+    resourceId: reportId,
+  });
+}
 
 export function getProcessor(type: string): Processor | undefined {
   return registry[type];
