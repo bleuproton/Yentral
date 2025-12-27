@@ -406,6 +406,35 @@ async function suitePhase7() {
   if (!conn?.lastSyncAt) fail('Phase7: lastSyncAt not set');
 }
 
+async function suiteFlowAutomation() {
+  const tenant = await getOrCreateTenant(prisma);
+  const flow = await prisma.flow.upsert({
+    where: { tenantId_slug: { tenantId: tenant.id, slug: 'auto-smoke' } },
+    update: { name: 'Automation Smoke' },
+    create: { tenantId: tenant.id, slug: 'auto-smoke', name: 'Automation Smoke' },
+  });
+  const version = await prisma.flowVersion.upsert({
+    where: { tenantId_flowId_version: { tenantId: tenant.id, flowId: flow.id, version: 1 } },
+    update: { published: true },
+    create: { tenantId: tenant.id, flowId: flow.id, version: 1, definition: { steps: [] }, published: true },
+  });
+  await prisma.flowVersion.updateMany({ where: { tenantId: tenant.id, flowId: flow.id }, data: { published: false } });
+  await prisma.flowVersion.update({ where: { id: version.id }, data: { published: true } });
+  const run = await prisma.flowRun.create({
+    data: {
+      tenantId: tenant.id,
+      flowId: flow.id,
+      flowVersionId: version.id,
+      status: 'PENDING',
+      input: { hello: 'world' },
+    },
+  });
+  // run worker once
+  const runner = await import('../scripts/worker_flow_runner');
+  await runner.processRun ? runner.processRun({ id: run.id, tenantId: tenant.id }) : await runner.default?.();
+  const completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: run.id } } });
+  if (!completed || completed.status !== 'COMPLETED') fail('Flow automation: run not completed');
+}
 async function suiteWorker() {
   await suitePhase7();
 }
@@ -484,6 +513,7 @@ async function main() {
         await suitePhase6();
         await suiteFulfillment();
         await suitePhase7();
+        await suiteFlowAutomation();
         break;
       case 'phase7b':
         await suitePhase7a();
@@ -573,6 +603,50 @@ async function main() {
         break;
       case 'worker':
         await suiteWorker();
+        break;
+      case 'accounting':
+        if (!process.env.ENCRYPTION_KEY) process.env.ENCRYPTION_KEY = Buffer.alloc(32, 1).toString('base64');
+        const tenantAcc = await getOrCreateTenant(prisma);
+        const le = await getOrCreateLegalEntity(prisma, tenantAcc.id, (await getOrCreateOrganization(prisma, tenantAcc.id, 'OrgAcc')).id, (await getOrCreateJurisdiction(prisma, 'EU')).id, 'LE-ACC');
+        const baseOrder = await prisma.order.create({
+          data: {
+            tenantId: tenantAcc.id,
+            orderNumber: Math.floor(Date.now() / 1000),
+            status: 'PENDING',
+            currency: 'EUR',
+            totalCents: 1000,
+          },
+        });
+        const invoice = await prisma.invoice.create({
+          data: {
+            tenantId: tenantAcc.id,
+            invoiceNumber: Math.floor(Date.now() / 1000),
+            orderId: baseOrder.id,
+            legalEntityId: le.id,
+            status: 'DRAFT',
+            currency: 'EUR',
+            subtotalCents: 1000,
+            taxCents: 0,
+            totalCents: 1000,
+          },
+        });
+        const { AccountingPostingService } = await import('../src/server/services/accountingPostingService');
+        const svc = new AccountingPostingService();
+        const ctx = { tenantId: tenantAcc.id, userId: null };
+        await svc.postInvoice(ctx as any, invoice.id);
+        const lines = await prisma.journalLine.findMany({ where: { tenantId: tenantAcc.id } });
+        const sum = lines.reduce((acc, l) => acc + l.debitCents - l.creditCents, 0);
+        if (sum !== 0) fail('Accounting not balanced');
+        break;
+      case 'oss':
+        if (!process.env.ENCRYPTION_KEY) process.env.ENCRYPTION_KEY = Buffer.alloc(32, 1).toString('base64');
+        const tenantOss = await getOrCreateTenant(prisma);
+        const { VatOssService } = await import('../src/server/services/vatOssService');
+        const vsvc = new VatOssService();
+        const ctxO = { tenantId: tenantOss.id, userId: null };
+        await vsvc.buildVatTransactions(ctxO as any);
+        const report = await vsvc.generateOssReport(ctxO as any, new Date(), new Date());
+        if (!report) fail('OSS report missing');
         break;
       default:
         fail(`Unknown suite ${suite}`);

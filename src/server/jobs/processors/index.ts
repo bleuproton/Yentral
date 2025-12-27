@@ -19,6 +19,22 @@ const registry: Record<string, Processor> = {
       metadata: {},
     });
   },
+  'vat.rebuild': async (job: Job) => {
+    await writeAuditEvent({
+      tenantId: job.tenantId,
+      action: 'vat.rebuild',
+      resourceType: 'Job',
+      resourceId: job.id,
+    });
+  },
+  'oss.export': async (job: Job) => {
+    await writeAuditEvent({
+      tenantId: job.tenantId,
+      action: 'oss.export',
+      resourceType: 'Job',
+      resourceId: job.id,
+    });
+  },
 };
 
 export function getProcessor(type: string): Processor | undefined {

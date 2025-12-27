@@ -32,6 +32,8 @@
     "smoke:phase6": "tsx scripts/smoke.ts phase6",
     "smoke:fulfillment": "tsx scripts/smoke.ts fulfillment",
     "smoke:phase7": "tsx scripts/smoke.ts phase7",
+    "smoke:accounting": "tsx scripts/smoke.ts accounting",
+    "smoke:oss": "tsx scripts/smoke.ts oss",
     "smoke:phase7c": "tsx scripts/smoke.ts phase7c",
     "smoke:phase7a": "tsx scripts/smoke.ts phase7a",
     "smoke:phase7b": "tsx scripts/smoke_phase7b.ts",

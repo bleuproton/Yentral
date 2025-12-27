@@ -57,9 +57,30 @@ async function scheduleMailboxJobs() {
   }
 }
 
+async function scheduleVatJobs() {
+  const tenants = await prisma.tenant.findMany();
+  for (const t of tenants) {
+    const key = dedupeKey('vat.rebuild', t.id, 'global', 'daily');
+    await prisma.job.upsert({
+      where: { tenantId_dedupeKey: { tenantId: t.id, dedupeKey: key } },
+      update: { nextRunAt: new Date(Date.now() + 24 * 60 * 60 * 1000) },
+      create: {
+        tenantId: t.id,
+        type: 'vat.rebuild',
+        payload: {},
+        dedupeKey: key,
+        status: 'PENDING',
+        maxAttempts: 3,
+        nextRunAt: new Date(),
+      },
+    });
+  }
+}
+
 async function main() {
   await scheduleIntegrationJobs();
   await scheduleMailboxJobs();
+  await scheduleVatJobs();
   await prisma.$disconnect();
   console.log('Scheduler tick complete');
 }

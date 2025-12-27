@@ -133,6 +133,16 @@ model Tenant {
   channelProducts        ChannelProduct[]
   channelVariants        ChannelVariant[]
   channelOrders          ChannelOrder[]
+  quotes                 Quote[]
+  quoteLines             QuoteLine[]
+  documentTemplates      DocumentTemplate[]
+  documentRenders        DocumentRender[]
+  gLAccounts             GLAccount[]
+  journalEntries         JournalEntry[]
+  journalLines           JournalLine[]
+  vatRegistrations       VatRegistration[]
+  vatTransactions        VatTransaction[]
+  reportExports          ReportExport[]
   shipments              Shipment[]              @relation("TenantShipments")
   returns                Return[]                @relation("TenantReturns")
   shipmentLines          ShipmentLine[]          @relation("TenantShipmentLines")
@@ -146,6 +156,14 @@ model Tenant {
   mediaAssets            MediaAsset[]
   productMedia           ProductMedia[]
   variantMedia           VariantMedia[]
+  flows                  Flow[]
+  flowVersions           FlowVersion[]
+  flowTemplates          FlowTemplate[]
+  flowRuns               FlowRun[]
+  flowRunLogs            FlowRunLog[]
+  webhookEndpoints       WebhookEndpoint[]
+  secrets                Secret[]
+  credentials            Credential[]
 }
 
 model User {
@@ -230,6 +248,7 @@ model Product {
   variants        ProductVariant[]
   channelProducts ChannelProduct[]
   productMedia    ProductMedia[]
+  quoteLines      QuoteLine[]
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -319,6 +338,350 @@ model VariantMedia {
   @@unique([tenantId, id])
 }
 
+enum FlowRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  INVOICED
+}
+
+enum DocumentType {
+  QUOTE
+  INVOICE
+  REPORT
+}
+
+enum DocumentRenderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum ReportExportType {
+  OSS_VAT
+  LOCAL_VAT
+  EPR
+  GL_EXPORT
+}
+
+model Flow {
+  id          String       @id @default(cuid())
+  tenantId    String
+  name        String
+  slug        String?
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  versions    FlowVersion[]
+  runs        FlowRun[]
+  webhooks    WebhookEndpoint[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, slug])
+}
+
+model FlowVersion {
+  id        String   @id @default(cuid())
+  tenantId  String
+  flowId    String
+  version   Int
+  definition Json
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  flow   Flow   @relation(fields: [tenantId, flowId], references: [tenantId, id], onDelete: Cascade)
+  runs   FlowRun[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, flowId, version])
+  @@index([tenantId, flowId])
+}
+
+model FlowTemplate {
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  definition Json
+  createdAt  DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+}
+
+model FlowRun {
+  id             String        @id @default(cuid())
+  tenantId       String
+  flowId         String
+  flowVersionId  String
+  status         FlowRunStatus @default(PENDING)
+  startedAt      DateTime?     @default(now())
+  finishedAt     DateTime?
+  input          Json?
+  output         Json?
+  error          String?
+  createdAt      DateTime      @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  flow        Flow        @relation(fields: [tenantId, flowId], references: [tenantId, id], onDelete: Cascade)
+  flowVersion FlowVersion @relation(fields: [tenantId, flowVersionId], references: [tenantId, id], onDelete: Cascade)
+  logs        FlowRunLog[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status])
+}
+
+model FlowRunLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  runId     String
+  level     String
+  message   String
+  data      Json?
+  createdAt DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  run    FlowRun @relation(fields: [tenantId, runId], references: [tenantId, id], onDelete: Cascade)
+
+  @@index([tenantId, runId])
+  @@unique([tenantId, id])
+}
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  tenantId  String
+  flowId    String
+  token     String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  flow   Flow   @relation(fields: [tenantId, flowId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, token])
+}
+
+model Secret {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  credentials Credential[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+}
+
+model Credential {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  type      String
+  provider  String?
+  config    Json?
+  secretId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  secret Secret? @relation(fields: [tenantId, secretId], references: [tenantId, id], onDelete: SetNull)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+}
+
+model Quote {
+  id            String       @id @default(cuid())
+  tenantId      String
+  customerId    String?
+  status        QuoteStatus  @default(DRAFT)
+  currency      String       @default("EUR")
+  subtotalCents Int
+  taxCents      Int
+  totalCents    Int
+  expiresAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  lines         QuoteLine[]
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [tenantId, customerId], references: [tenantId, id], onDelete: SetNull)
+
+  @@unique([tenantId, id])
+}
+
+model QuoteLine {
+  id          String   @id @default(cuid())
+  tenantId    String
+  quoteId     String
+  productId   String?
+  description String?
+  quantity    Int
+  unitCents   Int
+  totalCents  Int
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quote   Quote   @relation(fields: [tenantId, quoteId], references: [tenantId, id], onDelete: Cascade)
+  product Product? @relation(fields: [tenantId, productId], references: [tenantId, id], onDelete: SetNull)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, quoteId])
+}
+
+model DocumentTemplate {
+  id           String        @id @default(cuid())
+  tenantId     String
+  key          String
+  name         String
+  type         DocumentType
+  templateHtml String
+  engine       String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  renders      DocumentRender[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, key])
+}
+
+model DocumentRender {
+  id         String                @id @default(cuid())
+  tenantId   String
+  templateId String
+  refType    String
+  refId      String
+  status     DocumentRenderStatus  @default(PENDING)
+  outputUrl  String?
+  payloadJson Json?
+  createdAt  DateTime              @default(now())
+  finishedAt DateTime?
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  template DocumentTemplate @relation(fields: [tenantId, templateId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, refType, refId])
+}
+
+model GLAccount {
+  id       String @id @default(cuid())
+  tenantId String
+  code     String
+  name     String
+  type     String
+  lines    JournalLine[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, code])
+}
+
+model JournalEntry {
+  id             String   @id @default(cuid())
+  tenantId       String
+  legalEntityId  String
+  refType        String?
+  refId          String?
+  postedAt       DateTime @default(now())
+  createdAt      DateTime @default(now())
+  lines          JournalLine[]
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  legalEntity LegalEntity @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, postedAt])
+}
+
+model JournalLine {
+  id         String   @id @default(cuid())
+  tenantId   String
+  entryId    String
+  accountId  String
+  debitCents Int      @default(0)
+  creditCents Int     @default(0)
+  currency   String   @default("EUR")
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entry   JournalEntry @relation(fields: [tenantId, entryId], references: [tenantId, id], onDelete: Cascade)
+  account GLAccount    @relation(fields: [tenantId, accountId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, entryId])
+}
+
+model VatRegistration {
+  id             String   @id @default(cuid())
+  tenantId       String
+  jurisdictionId String
+  vatNumber      String
+  ossEnabled     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, vatNumber])
+}
+
+model VatTransaction {
+  id             String   @id @default(cuid())
+  tenantId       String
+  orderId        String?
+  invoiceId      String?
+  jurisdictionId String
+  netCents       Int
+  vatCents       Int
+  rateBps        Int
+  category       String
+  createdAt      DateTime @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id], onDelete: Cascade)
+  order        Order?       @relation(fields: [tenantId, orderId], references: [tenantId, id], onDelete: SetNull)
+  invoice      Invoice?     @relation(fields: [tenantId, invoiceId], references: [tenantId, id], onDelete: SetNull)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, jurisdictionId])
+}
+
+model ReportExport {
+  id          String          @id @default(cuid())
+  tenantId    String
+  type        ReportExportType
+  periodStart DateTime
+  periodEnd   DateTime
+  status      String          @default("PENDING")
+  outputUrl   String?
+  meta        Json?
+  createdAt   DateTime        @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, type])
+}
+
 model InventoryItem {
   id        String   @id @default(cuid())
   tenantId  String
@@ -357,6 +720,7 @@ model Order {
   tenant  Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   user    User?     @relation("UserOrders", fields: [userId], references: [id])
   Invoice Invoice[]
+  vatTransactions VatTransaction[]
 
   @@unique([tenantId, orderNumber])
   @@unique([tenantId, id])
@@ -483,6 +847,7 @@ model Customer {
   tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   orders   Order[]
   invoices Invoice[]
+  quotes   Quote[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, email])
@@ -516,6 +881,7 @@ model Invoice {
   legalEntity LegalEntity   @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
   taxProfile  TaxProfile?   @relation(fields: [tenantId, taxProfileId], references: [tenantId, id], onDelete: SetNull)
   lines       InvoiceLine[]
+  vatTransactions VatTransaction[]
 
   @@unique([tenantId, invoiceNumber])
   @@unique([tenantId, id])
@@ -653,6 +1019,8 @@ model Jurisdiction {
   timezone      String
   legalEntities LegalEntity[]
   taxProfiles   TaxProfile[]
+  vatRegistrations VatRegistration[]
+  vatTransactions  VatTransaction[]
 }
 
 model Organization {
@@ -684,6 +1052,7 @@ model LegalEntity {
   jurisdiction Jurisdiction @relation(fields: [jurisdictionId], references: [id], onDelete: Restrict)
   taxProfiles  TaxProfile[]
   Invoice      Invoice[]
+  journalEntries JournalEntry[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, id])
