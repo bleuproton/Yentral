@@ -8,8 +8,8 @@ export const POST = tenantRoute(async ({ ctx, params, req }) => {
   const run = await prisma.flowRun.create({
     data: {
       tenantId: ctx.tenantId,
-      flowId: params.id,
-      flowVersionId: params.id, // placeholder to satisfy relation
+      flowId: params.flowId,
+      flowVersionId: params.flowId, // placeholder to satisfy relation
       status: 'PENDING',
       input: body?.input ?? {},
       triggerType: body.triggerType ?? 'manual',

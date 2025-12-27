@@ -1,34 +1,14 @@
-import type { NextRequest } from "next/server";
-import { prisma } from "./prisma";
+import { cookies } from 'next/headers';
 
-export function extractTenantSlug(req: NextRequest): string | null {
-  const headerSlug = req.headers.get("x-tenant-id");
-  if (headerSlug) return headerSlug;
+const TENANT_COOKIE = 'tenantId';
 
-  const searchSlug = req.nextUrl.searchParams.get("tenant");
-  if (searchSlug) return searchSlug;
-
-  const host = req.headers.get("host");
-  if (!host) return null;
-
-  const [maybeSubdomain] = host.split(".");
-  if (maybeSubdomain && maybeSubdomain !== "localhost") {
-    return maybeSubdomain;
-  }
-
-  return null;
+export function getActiveTenantId(): string | null {
+  const c = cookies().get(TENANT_COOKIE)?.value;
+  return c ?? null;
 }
 
-export async function resolveTenant(req: NextRequest) {
-  const slug = extractTenantSlug(req);
-  if (!slug) return null;
-  return prisma.tenant.findUnique({ where: { slug } });
-}
-
-export async function requireTenant(req: NextRequest) {
-  const tenant = await resolveTenant(req);
-  if (!tenant) {
-    throw new Error("Tenant not found or missing. Provide x-tenant-id header or tenant query param.");
-  }
-  return tenant;
+export function setActiveTenantId(tenantId: string) {
+  if (!tenantId) return;
+  const store = cookies();
+  store.set(TENANT_COOKIE, tenantId, { path: '/', httpOnly: false });
 }
