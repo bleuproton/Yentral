@@ -395,7 +395,7 @@ async function suitePhase7() {
   });
 
   // Run worker once
-  const { processOnce } = await import('@/worker/worker');
+  const { processOnce } = await import('../worker/index');
   await processOnce();
 
   const refreshedJob = await prisma.job.findUnique({ where: { id: job.id } });
@@ -405,9 +405,14 @@ async function suitePhase7() {
   if (!refreshedJob || refreshedJob.status !== 'COMPLETED') fail('Phase7: job not completed');
   if (!conn?.lastSyncAt) fail('Phase7: lastSyncAt not set');
 }
+
+async function suiteWorker() {
+  await suitePhase7();
+}
+
 async function main() {
   const suite = process.argv[2];
-  if (!suite) fail('Pass suite name (phase2-3|phase4|phase5|phase6|fulfillment|phase7)');
+  if (!suite) fail('Pass suite name (phase2-3|phase4|phase5|phase6|fulfillment|phase7|worker)');
   try {
     switch (suite) {
       case 'phase2-3':
@@ -425,13 +430,16 @@ async function main() {
       case 'fulfillment':
         await suiteFulfillment();
         break;
-    case 'phase7':
+      case 'phase7':
         await suitePhase2_3();
         await suitePhase4();
         await suitePhase5();
         await suitePhase6();
         await suiteFulfillment();
         await suitePhase7();
+        break;
+      case 'worker':
+        await suiteWorker();
         break;
       default:
         fail(`Unknown suite ${suite}`);

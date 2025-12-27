@@ -32,8 +32,10 @@
     "smoke:phase6": "tsx scripts/smoke.ts phase6",
     "smoke:fulfillment": "tsx scripts/smoke.ts fulfillment",
     "smoke:phase7": "tsx scripts/smoke.ts phase7",
-    "worker": "tsx scripts/worker.ts",
-    "worker:once": "tsx scripts/worker_once.ts",
+    "smoke:worker": "tsx scripts/smoke.ts worker",
+    "worker": "tsx worker/index.ts",
+    "worker:dev": "tsx worker/index.ts",
+    "worker:once": "tsx worker/index.ts --once",
     "boss:worker": "PG_BOSS_WORKER=1 tsx scripts/boss-worker.ts",
     "db:status": "prisma migrate status",
     "db:validate": "prisma validate",
@@ -44,6 +46,7 @@
     "migrate:make": "tsx scripts/make_migration_from_diff.ts",
     "migrate:deploy": "npx prisma migrate deploy",
     "prisma:generate": "npx prisma generate",
+    "phase7a:check": "prisma validate && npm run phase6:verify && npm run db:health",
     "progress:check": "tsx scripts/progress_check.ts"
   },
   "dependencies": {

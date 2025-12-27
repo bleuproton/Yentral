@@ -1,14 +1,19 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { JobRepository } from "@/_legacy/repositories/jobRepository";
+import { withApi } from '@/server/http/withApi';
+import { JobService } from '@/server/services/jobService';
+import { tenantDb } from '@/server/db/tenantDb';
+import { jsonOk, created } from '@/server/http/response';
+import { parseJson } from '@/server/validation/zod';
+import { JobEnqueueSchema } from '@/server/schemas/job';
 
-const repo = new JobRepository();
+export const GET = withApi(async (ctx) => {
+  const service = new JobService(tenantDb(ctx.tenantId), ctx.tenantId, ctx.actorUserId || '');
+  const list = await service.list({});
+  return jsonOk(list);
+});
 
-export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const jobs = await repo.list(session.tenantId);
-  return NextResponse.json(jobs);
-}
+export const POST = withApi(async (ctx) => {
+  const body = await parseJson(ctx.req, JobEnqueueSchema);
+  const service = new JobService(tenantDb(ctx.tenantId), ctx.tenantId, ctx.actorUserId || '');
+  const job = await service.enqueue(body);
+  return created(job);
+});

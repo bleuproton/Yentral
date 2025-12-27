@@ -1,8 +1,10 @@
-import { JobStatus } from '@prisma/client';
-import { prisma } from '@/server/db/prisma';
+import { Job, JobStatus } from '@prisma/client';
+import { prisma, tenantDb, writeAuditEvent } from './deps';
 import { runJobHandler } from './handlers';
 
-export async function processJob(job: any) {
+const MAX_BACKOFF_MIN = 240;
+
+export async function processJob(job: Job) {
   const run = await prisma.jobRun.create({
     data: {
       tenantId: job.tenantId,
@@ -30,8 +32,8 @@ export async function processJob(job: any) {
       data: { status: JobStatus.COMPLETED, finishedAt: new Date() },
     });
   } catch (err: any) {
-    const attempts = job.attempts + 1;
-    const backoffSec = Math.min(60 * 2 ** (attempts - 1), 3600);
+    const attempts = job.attempts;
+    const backoffMin = Math.min(Math.pow(2, attempts), MAX_BACKOFF_MIN);
     const retry = attempts < job.maxAttempts;
     await prisma.job.update({
       where: { id: job.id },
@@ -40,7 +42,7 @@ export async function processJob(job: any) {
         lockedAt: null,
         finishedAt: retry ? null : new Date(),
         lastError: err?.message ?? 'Job failed',
-        nextRunAt: retry ? new Date(Date.now() + backoffSec * 1000) : null,
+        nextRunAt: retry ? new Date(Date.now() + backoffMin * 60 * 1000) : null,
       },
     });
     await prisma.jobRun.update({

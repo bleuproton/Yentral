@@ -39,3 +39,10 @@ export class TenantScopeError extends AppError {
     super(403, 'TENANT_SCOPE', message);
   }
 }
+
+export function toHttpResponse(err: any) {
+  if (err instanceof AppError) {
+    return { status: err.statusCode, body: { ok: false, error: { code: err.code, message: err.message } } };
+  }
+  return { status: 500, body: { ok: false, error: { code: 'INTERNAL_ERROR', message: err?.message ?? 'Internal error' } } };
+}
