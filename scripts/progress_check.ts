@@ -10,6 +10,7 @@ const cmds = [
   'npm run smoke:phase5',
   'npm run smoke:phase6',
   'npm run smoke:fulfillment',
+  'npm run smoke:phase7',
 ];
 
 function runCmd(cmd: string): Result {

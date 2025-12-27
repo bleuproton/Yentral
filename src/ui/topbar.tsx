@@ -1,3 +1,5 @@
+'use client';
+
 import { TenantSwitcher } from './tenantSwitcher';
 
 export function Topbar({ userEmail }: { userEmail?: string | null }) {
