@@ -28,7 +28,7 @@ export function TenantSwitcher() {
     if (typeof window !== 'undefined' && slug) {
       window.localStorage.setItem('tenantSlug', slug);
     }
-    await apiClientFetch('/api/tenant/switch', {
+    await apiClientFetch('/api/tenant/select', {
       method: 'POST',
       body: JSON.stringify({ tenantId }),
     });

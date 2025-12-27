@@ -1,11 +1,18 @@
 import prisma from '@/lib/prisma';
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getServerAuthSession } from '@/lib/auth';
 
-async function setTenant(tenantId: string) {
+async function setTenant(formData: FormData) {
   'use server';
-  cookies().set('tenantId', tenantId, { path: '/', httpOnly: false });
+  const tenantId = (formData.get('tenantId') as string | null)?.trim();
+  if (!tenantId) {
+    return;
+  }
+  await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tenant/select`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ tenantId }),
+  });
   redirect('/dashboard');
 }
 

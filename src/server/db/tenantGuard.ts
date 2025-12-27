@@ -4,20 +4,9 @@ import { HttpError } from '@/lib/httpErrors';
 import { getContext } from '../tenant/als';
 import { logger } from '../log/logger';
 
-const GLOBAL_MODELS = new Set<string>([
-  'User',
-  'Account',
-  'Session',
-  'VerificationToken',
-  'Jurisdiction',
-  'Connector',
-  'ConnectorVersion',
-  'Plugin',
-  'Tenant',
-]);
+const GLOBAL_MODELS = new Set<string>(['User', 'Account', 'Session', 'VerificationToken', 'Jurisdiction', 'Connector', 'ConnectorVersion', 'Plugin', 'Tenant', 'Membership']);
 
 const TENANT_MODELS = new Set<string>([
-  'Membership',
   'Organization',
   'LegalEntity',
   'TaxProfile',

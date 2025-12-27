@@ -193,8 +193,10 @@ async function main() {
       totalCents: 1000
     }
   });
-  await prisma.invoice.create({
-    data: {
+  await prisma.invoice.upsert({
+    where: { tenantId_invoiceNumber: { tenantId: tenant.id, invoiceNumber: 1 } },
+    update: {},
+    create: {
       tenantId: tenant.id,
       invoiceNumber: 1,
       orderId: order.id,
@@ -218,7 +220,7 @@ async function main() {
       }
     }
   });
-  console.log("✅ Seed invoice created");
+  console.log("✅ Seed invoice ensured");
 
   console.log("🎉 Seed complete");
 }
