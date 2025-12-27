@@ -134,12 +134,12 @@ async function main() {
   });
   console.log("✅ Connector versions: 1.0.0 for both");
 
-  const passwordHash = bcrypt.hashSync("changeme123", 10);
+  const passwordHash = bcrypt.hashSync("Admin123!", 10);
   const user = await prisma.user.upsert({
-    where: { email: "admin@yentral.test" },
+    where: { email: "admin@yentral.local" },
     update: { password: passwordHash, name: "Demo Admin" },
     create: {
-      email: "admin@yentral.test",
+      email: "admin@yentral.local",
       name: "Demo Admin",
       password: passwordHash
     }
@@ -149,7 +149,7 @@ async function main() {
     update: { role: Role.OWNER },
     create: { userId: user.id, tenantId: tenant.id, role: Role.OWNER }
   });
-  console.log("✅ Admin user: admin@yentral.test / changeme123 (role OWNER)");
+  console.log("✅ Admin user: admin@yentral.local / Admin123! (role OWNER)");
 
   console.log("➡️  Seeding customer/order/invoice demo");
   const customer = await prisma.customer.upsert({

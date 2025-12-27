@@ -64,6 +64,8 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.email = user.email;
+        token.name = user.name;
         token.tenantId = (user as any).tenantId;
         token.tenantSlug = (user as any).tenantSlug;
         token.role = (user as any).role;
@@ -83,7 +85,7 @@ export const authOptions: NextAuthOptions = {
     }
   },
   pages: {
-    signIn: "/"
+    signIn: "/login"
   },
   secret: env.NEXTAUTH_SECRET
 };
