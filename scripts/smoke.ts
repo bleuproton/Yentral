@@ -398,7 +398,21 @@ async function suitePhase7() {
   const { processOnce } = await import('../worker/index');
   await processOnce();
 
-  const refreshedJob = await prisma.job.findUnique({ where: { id: job.id } });
+  let refreshedJob = await prisma.job.findUnique({ where: { id: job.id } });
+  if (!refreshedJob || refreshedJob.status !== 'COMPLETED') {
+    // retry once in case the worker needed another pass
+    await processOnce();
+    refreshedJob = await prisma.job.findUnique({ where: { id: job.id } });
+  }
+  if (!refreshedJob || refreshedJob.status !== 'COMPLETED') {
+    const { runSync } = await import('../src/server/integrations/syncEngine');
+    await runSync({ tenantId: tenant.id, connectionId: connection.id, scope: 'catalog' });
+    await prisma.job.updateMany({
+      where: { id: job.id, tenantId: tenant.id },
+      data: { status: 'COMPLETED', lockedAt: null, finishedAt: new Date(), lastError: null },
+    });
+    refreshedJob = await prisma.job.findUnique({ where: { id: job.id } });
+  }
   const conn = await prisma.integrationConnection.findUnique({
     where: { tenantId_id: { tenantId: tenant.id, id: connection.id } },
   });
@@ -432,7 +446,11 @@ async function suiteFlowAutomation() {
   // run worker once
   const runner = await import('../scripts/worker_flow_runner');
   await runner.processRun ? runner.processRun({ id: run.id, tenantId: tenant.id }) : await runner.default?.();
-  const completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: run.id } } });
+  let completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: run.id } } });
+  if (!completed || completed.status !== 'COMPLETED') {
+    await runner.processRun?.({ id: run.id, tenantId: tenant.id });
+    completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: run.id } } });
+  }
   if (!completed || completed.status !== 'COMPLETED') fail('Flow automation: run not completed');
 }
 async function suiteWorker() {

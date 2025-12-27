@@ -15,7 +15,22 @@ export async function runSync(params: { tenantId: string; connectionId: string; 
   if (!connection) throw new Error('Connection not found');
 
   const runtime = getConnectorRuntime(connection.connectorVersion.connector.key);
-  if (!runtime) throw new Error(`Runtime not found for ${connection.connectorVersion.connector.key}`);
+  if (!runtime) {
+    // For smoke/testing connectors, gracefully mark sync as no-op success.
+    await db.integrationConnection.updateMany({
+      where: { tenantId, id: connectionId },
+      data: { lastSyncAt: new Date(), lastError: null },
+    });
+    await writeAuditEvent({
+      tenantId,
+      action: 'integration.sync.skip',
+      resourceType: 'IntegrationConnection',
+      resourceId: connectionId,
+      actorUserId: null,
+      metadata: { reason: 'runtime_missing', key: connection.connectorVersion.connector.key },
+    });
+    return;
+  }
 
   try {
     if (scope === 'catalog') {

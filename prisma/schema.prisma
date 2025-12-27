@@ -164,6 +164,9 @@ model Tenant {
   webhookEndpoints       WebhookEndpoint[]
   secrets                Secret[]
   credentials            Credential[]
+  accountingPeriods      AccountingPeriod[]
+  postingLocks           PostingLock[]
+  accountantAccesses     AccountantAccess[]
 }
 
 model User {
@@ -181,6 +184,7 @@ model User {
   tickets         Ticket[]     @relation("TicketAuthor")
   assignedTickets Ticket[]     @relation("TicketAssignee")
   auditEvents     AuditEvent[]
+  accountantAccesses AccountantAccess[]
 }
 
 model Membership {
@@ -363,6 +367,11 @@ enum DocumentRenderStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+enum AccountingPeriodStatus {
+  OPEN
+  CLOSED
 }
 
 enum ReportExportType {
@@ -680,6 +689,57 @@ model ReportExport {
 
   @@unique([tenantId, id])
   @@index([tenantId, type])
+}
+
+model AccountingPeriod {
+  id            String                  @id @default(cuid())
+  tenantId      String
+  legalEntityId String
+  startDate     DateTime
+  endDate       DateTime
+  status        AccountingPeriodStatus  @default(OPEN)
+  closedAt      DateTime?
+  closedByUserId String?
+  createdAt     DateTime                @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  legalEntity LegalEntity @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, legalEntityId, startDate, endDate])
+  @@index([tenantId, legalEntityId, status])
+}
+
+model PostingLock {
+  id             String   @id @default(cuid())
+  tenantId       String
+  legalEntityId  String
+  lockedFromDate DateTime
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  legalEntity LegalEntity @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, legalEntityId, lockedFromDate])
+}
+
+model AccountantAccess {
+  id            String   @id @default(cuid())
+  tenantId      String
+  userId        String
+  legalEntityId String?
+  permissions   Json?
+  createdAt     DateTime @default(now())
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  legalEntity LegalEntity? @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: SetNull)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, userId, legalEntityId])
+  @@index([tenantId, userId])
 }
 
 model InventoryItem {
@@ -1053,6 +1113,9 @@ model LegalEntity {
   taxProfiles  TaxProfile[]
   Invoice      Invoice[]
   journalEntries JournalEntry[]
+  accountingPeriods AccountingPeriod[]
+  postingLocks      PostingLock[]
+  accountantAccesses AccountantAccess[]
 
   @@unique([tenantId, name])
   @@unique([tenantId, id])

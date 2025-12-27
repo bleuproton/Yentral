@@ -52,7 +52,7 @@ async function loop() {
   }
 }
 
-if (require.main === module) {
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   loop().catch((err) => {
     console.error(err);
     process.exit(1);

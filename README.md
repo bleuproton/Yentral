@@ -18,7 +18,7 @@ Backend-first multi-tenant commerce/SaaS platform built on Next.js (App Router) 
 5) Plugin/connector UX pass: marketplace UI, connector-specific validation flows.
 6) Inventory cleanup: deprecate legacy InventoryItem, rely on StockSnapshot/Reservation.
 7) Fulfillment providers: FBA/MCF/LVB/3PL support and label handling.
-8) UX/UI expansion: after core ops (1-3) are stable, start UI polish/flows in phases—marketplace/support first, then fulfillment and inventory dashboards.
+8) UX/UI expansion: after core ops (1-3) are stable, start UI polish/flows in phases—marketplace/support first, then fulfillment and inventory dashboards. Dashboard lives under `/dashboard/*` with sidebar/topbar/tenant switcher; flow builder under `/dashboard/automations`.
 
 ## Prerequisites
 - Node.js 20 LTS + pnpm v10+
@@ -38,7 +38,10 @@ Backend-first multi-tenant commerce/SaaS platform built on Next.js (App Router) 
 ```bash
 pnpm install           # install deps (pnpm v10+)
 pnpm prisma:generate   # generate Prisma client
+pnpm db:validate       # check schema validity
+pnpm db:status         # ensure migrations applied
 pnpm dev               # http://localhost:3000
+pnpm worker:flows      # flow runner (automation)
 ```
 
 Prisma migrations (require DATABASE_URL):
@@ -101,6 +104,7 @@ pnpm db:check        # migration sanity (validate/status/diff + DB checks)
 - Channel mappings: `npx tsx scripts/smoke-phase3.ts`
 - Combined Phase2/3: `npm run smoke:phase2-3`
 - Fulfillment Phase4: `npm run smoke:phase4`
+- Phase7 (jobs/integration sync + flow runner): `npm run smoke:phase7`
 
 ## Git Hooks (optional)
 - Pre-push: run `pnpm db:check` to ensure migrations and schema are in sync.

@@ -25,17 +25,14 @@ export async function processJob(job: Job) {
   try {
     await runJobHandler(job, correlationId);
     logInfo(job.tenantId, job.id, correlationId, 'job.completed');
-    await prisma.job.update({
-      where: { id: job.id },
-      data: {
-        status: JobStatus.COMPLETED,
-        finishedAt: new Date(),
-        lockedAt: null,
-        lastError: null,
-      },
-    });
-    await prisma.jobRun.update({
-      where: { id: run.id },
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Job" SET status = $1::"JobStatus", "finishedAt" = now(), "lockedAt" = NULL, "lastError" = NULL WHERE id = $2 AND "tenantId" = $3`,
+      JobStatus.COMPLETED,
+      job.id,
+      job.tenantId
+    );
+    await prisma.jobRun.updateMany({
+      where: { id: run.id, tenantId: job.tenantId },
       data: { status: JobStatus.COMPLETED, finishedAt: new Date() },
     });
   } catch (err: any) {
@@ -43,18 +40,18 @@ export async function processJob(job: Job) {
     const attempts = job.attempts;
     const backoffMin = Math.min(Math.pow(2, attempts), MAX_BACKOFF_MIN);
     const retry = attempts < job.maxAttempts;
-    await prisma.job.update({
-      where: { id: job.id },
-      data: {
-        status: retry ? JobStatus.PENDING : JobStatus.FAILED,
-        lockedAt: null,
-        finishedAt: retry ? null : new Date(),
-        lastError: err?.message ?? 'Job failed',
-        nextRunAt: retry ? new Date(Date.now() + backoffMin * 60 * 1000) : null,
-      },
-    });
-    await prisma.jobRun.update({
-      where: { id: run.id },
+    const nextRun = retry ? new Date(Date.now() + backoffMin * 60 * 1000) : null;
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Job" SET status = $1::"JobStatus", "lockedAt" = NULL, "finishedAt" = $2, "lastError" = $3, "nextRunAt" = $4 WHERE id = $5 AND "tenantId" = $6`,
+      retry ? JobStatus.PENDING : JobStatus.FAILED,
+      retry ? null : new Date(),
+      err?.message ?? 'Job failed',
+      nextRun,
+      job.id,
+      job.tenantId
+    );
+    await prisma.jobRun.updateMany({
+      where: { id: run.id, tenantId: job.tenantId },
       data: { status: JobStatus.FAILED, finishedAt: new Date(), error: err?.message ?? 'Job failed' },
     });
   }
