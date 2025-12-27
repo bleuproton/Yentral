@@ -1,10 +1,14 @@
 // @ts-nocheck
 import { run, RunnerOptions, TaskList } from 'graphile-worker';
 import { syncConnection } from './handlers/sync_connection';
+import { syncConnectionFull } from './handlers/sync_connection_full';
 
 const tasks: TaskList = {
   sync_connection: async (payload) => {
     await syncConnection(payload as any);
+  },
+  sync_connection_full: async (payload) => {
+    await syncConnectionFull(payload as any);
   },
 };
 

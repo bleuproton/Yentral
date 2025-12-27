@@ -37,6 +37,8 @@
     "smoke:worker": "tsx scripts/smoke.ts worker",
     "worker": "tsx worker/index.ts",
     "jobs:enqueue:sync": "tsx scripts/enqueue_sync_connection.ts",
+    "jobs:enqueue:syncfull": "tsx scripts/enqueue_sync_full.ts",
+    "smoke:phase9": "tsx scripts/smoke_phase9.ts",
     "worker:dev": "tsx worker/index.ts",
     "worker:once": "tsx worker/index.ts --once",
     "boss:worker": "PG_BOSS_WORKER=1 tsx scripts/boss-worker.ts",
