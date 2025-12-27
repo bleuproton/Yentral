@@ -167,6 +167,7 @@ model Tenant {
   accountingPeriods      AccountingPeriod[]
   postingLocks           PostingLock[]
   accountantAccesses     AccountantAccess[]
+  flowRunSteps           FlowRunStep[]
 }
 
 model User {
@@ -387,6 +388,9 @@ model Flow {
   name        String
   slug        String?
   description String?
+  status      FlowStatus   @default(DRAFT)
+  definition  Json?
+  publishedAt DateTime?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   versions    FlowVersion[]
@@ -397,6 +401,11 @@ model Flow {
 
   @@unique([tenantId, id])
   @@unique([tenantId, slug])
+}
+
+enum FlowStatus {
+  DRAFT
+  PUBLISHED
 }
 
 model FlowVersion {
@@ -441,15 +450,19 @@ model FlowRun {
   input          Json?
   output         Json?
   error          String?
+  triggerType    String?
+  triggerPayload Json?
   createdAt      DateTime      @default(now())
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   flow        Flow        @relation(fields: [tenantId, flowId], references: [tenantId, id], onDelete: Cascade)
   flowVersion FlowVersion @relation(fields: [tenantId, flowVersionId], references: [tenantId, id], onDelete: Cascade)
   logs        FlowRunLog[]
+  steps       FlowRunStep[]
 
   @@unique([tenantId, id])
   @@index([tenantId, status])
+  @@index([tenantId, flowId])
 }
 
 model FlowRunLog {
@@ -466,6 +479,25 @@ model FlowRunLog {
 
   @@index([tenantId, runId])
   @@unique([tenantId, id])
+}
+
+model FlowRunStep {
+  id         String   @id @default(cuid())
+  tenantId   String
+  flowRunId  String
+  nodeId     String
+  status     String
+  startedAt  DateTime? @default(now())
+  finishedAt DateTime?
+  input      Json?
+  output     Json?
+  error      String?
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  run    FlowRun @relation(fields: [tenantId, flowRunId], references: [tenantId, id], onDelete: Cascade)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, flowRunId])
 }
 
 model WebhookEndpoint {

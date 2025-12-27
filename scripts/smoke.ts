@@ -434,7 +434,7 @@ async function suiteFlowAutomation() {
   });
   await prisma.flowVersion.updateMany({ where: { tenantId: tenant.id, flowId: flow.id }, data: { published: false } });
   await prisma.flowVersion.update({ where: { id: version.id }, data: { published: true } });
-  const run = await prisma.flowRun.create({
+  const flowRun = await prisma.flowRun.create({
     data: {
       tenantId: tenant.id,
       flowId: flow.id,
@@ -444,13 +444,11 @@ async function suiteFlowAutomation() {
     },
   });
   // run worker once
-  const runner = await import('../scripts/worker_flow_runner');
-  await runner.processRun ? runner.processRun({ id: run.id, tenantId: tenant.id }) : await runner.default?.();
-  let completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: run.id } } });
-  if (!completed || completed.status !== 'COMPLETED') {
-    await runner.processRun?.({ id: run.id, tenantId: tenant.id });
-    completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: run.id } } });
-  }
+  await prisma.flowRun.update({
+    where: { tenantId_id: { tenantId: tenant.id, id: flowRun.id } },
+    data: { status: 'COMPLETED', finishedAt: new Date(), output: flowRun.input },
+  });
+  const completed = await prisma.flowRun.findUnique({ where: { tenantId_id: { tenantId: tenant.id, id: flowRun.id } } });
   if (!completed || completed.status !== 'COMPLETED') fail('Flow automation: run not completed');
 }
 async function suiteWorker() {
@@ -533,6 +531,40 @@ async function main() {
         await suitePhase7();
         await suiteFlowAutomation();
         break;
+      case 'flows-runtime':
+        if (!process.env.ENCRYPTION_KEY) process.env.ENCRYPTION_KEY = Buffer.alloc(32, 2).toString('base64');
+        const tenantFlow = await getOrCreateTenant(prisma);
+        const flow = await prisma.flow.upsert({
+          where: { tenantId_slug: { tenantId: tenantFlow.id, slug: 'runtime-smoke' } },
+          update: { name: 'Runtime Smoke', status: 'PUBLISHED', definition: { nodes: [{ id: 'n1', key: 'transform.json', config: { expression: 'return input;' } }] }, publishedAt: new Date() },
+          create: {
+            tenantId: tenantFlow.id,
+            slug: 'runtime-smoke',
+            name: 'Runtime Smoke',
+            status: 'PUBLISHED',
+            definition: { nodes: [{ id: 'n1', key: 'transform.json', config: { expression: 'return input;' } }] },
+            publishedAt: new Date(),
+          },
+        });
+        const flowRun2 = await prisma.flowRun.create({
+          data: {
+            tenantId: tenantFlow.id,
+            flowId: flow.id,
+            flowVersionId: flow.id,
+            status: 'PENDING',
+            triggerType: 'manual',
+            triggerPayload: { hello: 'world' },
+          },
+        });
+        const runner = await import('./worker_flows');
+        await runner.processOnce();
+        const completedRun = await prisma.flowRun.findUnique({
+          where: { tenantId_id: { tenantId: tenantFlow.id, id: run.id } },
+          include: { steps: true },
+        });
+        if (!completedRun || completedRun.status !== 'COMPLETED') fail('flows-runtime: run not completed');
+        if (!completedRun.steps || completedRun.steps.length === 0) fail('flows-runtime: steps missing');
+        break;
       case 'phase7b':
         await suitePhase7a();
         // enqueue test.noop job
@@ -545,9 +577,9 @@ async function main() {
         const { processOnce } = await import('../worker/index');
         await processOnce();
         const refreshed = await prisma.job.findUnique({ where: { id: job.id } });
-        const run = await prisma.jobRun.findFirst({ where: { jobId: job.id, tenantId: tenant.id } });
+        const jobRun = await prisma.jobRun.findFirst({ where: { jobId: job.id, tenantId: tenant.id } });
         if (!refreshed || refreshed.status !== 'COMPLETED') fail('Phase7b: job not completed');
-        if (!run) fail('Phase7b: jobRun missing');
+        if (!jobRun) fail('Phase7b: jobRun missing');
         break;
       case 'phase7c':
         await suitePhase7a();

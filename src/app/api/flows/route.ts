@@ -16,3 +16,12 @@ export const POST = tenantRoute(async ({ req, ctx }) => {
   const flow = await service.createFlow(ctx, body);
   return jsonOk(flow, 201);
 });
+
+// publish existing flow definition
+export const PATCH = tenantRoute(async ({ req, ctx }) => {
+  requireWriteAccess(ctx, 'flow.write');
+  const body = await parseJson(req);
+  const service = new FlowService();
+  const flow = await service.updateFlow(ctx, body.id, { status: 'PUBLISHED', definition: body.definition, publishedAt: new Date() });
+  return jsonOk(flow);
+});
