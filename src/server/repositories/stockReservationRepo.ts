@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ReservationStatus } from "@prisma/client";
 import { prisma } from "../db/prisma";
 

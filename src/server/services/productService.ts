@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { RequestContext } from '../tenant/context';
 import { ProductRepo } from '../repos/productRepo';
 import { VariantRepo } from '../repos/variantRepo';

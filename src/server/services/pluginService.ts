@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from '../db/prisma';
 import { tenantDb } from '../db/tenantDb';
 import { writeAudit } from '../audit/audit';

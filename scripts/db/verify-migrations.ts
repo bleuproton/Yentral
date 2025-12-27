@@ -46,48 +46,44 @@ async function main() {
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
   try {
-    const migRows = await pool.query<{
-      migration_name: string;
-      finished_at: Date | null;
-      rolled_back_at: Date | null;
-    }>(`SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" ORDER BY finished_at`);
+    const migRows = await pool.query(
+      `SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations" ORDER BY finished_at`
+    );
 
-    const appliedNames = migRows.rows.map((r) => r.migration_name);
+    const appliedNames = migRows.rows.map((r: any) => r.migration_name);
 
     // Missing applied
     localMigrations.forEach((name) => {
-      const match = migRows.rows.find((r) => r.migration_name === name && r.finished_at);
+      const match = migRows.rows.find((r: any) => r.migration_name === name && r.finished_at);
       if (!match) failures.push({ ok: false, message: `Not applied or unfinished: ${name}` });
     });
 
     // Failed/rolled back
-    migRows.rows.forEach((r) => {
+    migRows.rows.forEach((r: any) => {
       if (!r.finished_at) failures.push({ ok: false, message: `Migration not finished: ${r.migration_name}` });
       if (r.rolled_back_at) failures.push({ ok: false, message: `Migration rolled back: ${r.migration_name}` });
     });
 
     // Order check: applied order must follow local order prefix
     const localOrder = localMigrations.join("|");
-    const appliedOrder = appliedNames.filter((n) => localMigrations.includes(n)).join("|");
+    const appliedOrder = appliedNames.filter((n: any) => localMigrations.includes(n)).join("|");
     if (!appliedOrder.startsWith(localOrder)) {
       failures.push({ ok: false, message: "Applied migration order deviates from local order" });
     }
 
     // Table existence
-    const tableRows = await pool.query<{ table_name: string }>(
-      `SELECT table_name FROM information_schema.tables WHERE table_schema='public'`
-    );
-    const tableSet = new Set(tableRows.rows.map((r) => r.table_name));
+    const tableRows = await pool.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public'`);
+    const tableSet = new Set(tableRows.rows.map((r: any) => r.table_name));
     criticalTables.forEach((t) => {
       if (!tableSet.has(t)) failures.push({ ok: false, message: `Missing table: ${t}` });
     });
 
     // Column existence
-    const colRows = await pool.query<{ table_name: string; column_name: string }>(
+    const colRows = await pool.query(
       `SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='public'`
     );
     const colsByTable = new Map<string, Set<string>>();
-    colRows.rows.forEach((r) => {
+    colRows.rows.forEach((r: any) => {
       if (!colsByTable.has(r.table_name)) colsByTable.set(r.table_name, new Set());
       colsByTable.get(r.table_name)!.add(r.column_name);
     });

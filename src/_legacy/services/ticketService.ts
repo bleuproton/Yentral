@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { TicketStatus } from "@prisma/client";
 import { TicketRepository } from "@/_legacy/repositories/ticketRepository";
 

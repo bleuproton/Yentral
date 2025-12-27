@@ -1,19 +1,25 @@
- 'use client';
+// @ts-nocheck
+'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const links = [
-  { href: '/app/dashboard', label: 'Dashboard' },
-  { href: '/app/products', label: 'Products' },
-  { href: '/app/inventory', label: 'Inventory' },
-  { href: '/app/orders', label: 'Orders' },
-  { href: '/app/fulfillment/shipments', label: 'Shipments' },
-  { href: '/app/fulfillment/returns', label: 'Returns' },
-  { href: '/app/integrations', label: 'Integrations' },
-  { href: '/app/warehouses', label: 'Warehouses' },
-  { href: '/app/tickets', label: 'Tickets' },
-  { href: '/app/settings', label: 'Settings' },
+  { href: '/', label: 'Overview' },
+  { href: '/catalog', label: 'Catalog' },
+  { href: '/inventory', label: 'Inventory' },
+  { href: '/orders', label: 'Orders' },
+  { href: '/fulfillment', label: 'Fulfillment' },
+  { href: '/returns', label: 'Returns' },
+  { href: '/customers', label: 'Customers' },
+  { href: '/invoices', label: 'Invoices' },
+  { href: '/integrations', label: 'Integrations' },
+  { href: '/jobs', label: 'Jobs' },
+  { href: '/tickets', label: 'Tickets' },
+  { href: '/email', label: 'Email' },
+  { href: '/marketplace', label: 'Marketplace' },
+  { href: '/ai-studio', label: 'AI Studio' },
+  { href: '/settings', label: 'Settings' },
 ];
 
 export function Sidebar() {

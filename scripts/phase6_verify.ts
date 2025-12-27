@@ -45,7 +45,7 @@ function runCmd(cmd: string, findings: Finding[], label: string) {
 }
 
 function parseModels(schema: string) {
-  const modelRegex = /model\s+(\w+)\s*\{([^}]*)\}/gms;
+  const modelRegex = /model\s+(\w+)\s*\{([\s\S]*?)\}/gm;
   const models: Record<string, string> = {};
   let match: RegExpExecArray | null;
   while ((match = modelRegex.exec(schema))) {
@@ -67,7 +67,7 @@ function checkTenantFields(models: Record<string, string>): Finding[] {
     if (!hasTenantRel) {
       findings.push({ level: 'WARN', message: `Model ${name} has tenantId but no Tenant relation` });
     }
-    const uniqueMatches = block.match(/@@unique\s*\(([^)]*)\)/gms) || [];
+    const uniqueMatches = block.match(/@@unique\s*\(([\s\S]*?)\)/gm) || [];
     for (const u of uniqueMatches) {
       if (!u.includes('tenantId')) {
         findings.push({ level: 'WARN', message: `Model ${name} unique without tenantId: ${u.trim()}` });
@@ -82,7 +82,7 @@ function checkTenantFields(models: Record<string, string>): Finding[] {
         }
       }
     }
-    const rels = block.match(/@relation\([^)]+references:\s*\[([^\]]+)\][^)]+\)/gms) || [];
+    const rels = block.match(/@relation\([^\)]*references:\s*\[([^\]]+)\][^\)]*\)/gm) || [];
     const relationLineRegex = /(\w+)\s+([\w\[\]\?]+)\s+@relation\(([^)]*)\)/g;
     let relMatch: RegExpExecArray | null;
     while ((relMatch = relationLineRegex.exec(block))) {

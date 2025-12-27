@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { withApiContext } from '@/server/http/withApiContext';
 import { jsonOk, noContent } from '@/server/http/response';

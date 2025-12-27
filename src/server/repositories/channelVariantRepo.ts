@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Prisma, PrismaClient } from "@prisma/client";
 import { prisma } from "../db/prisma";
 

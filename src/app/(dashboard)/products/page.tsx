@@ -31,7 +31,7 @@ export default function ProductsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Products</h1>
-        <Link href={`/app/products/new`} className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
+        <Link href="/products" className="px-3 py-1 bg-blue-600 text-white rounded text-sm">
           New product
         </Link>
       </div>
@@ -52,7 +52,7 @@ export default function ProductsPage() {
             {items.map((p) => (
               <tr key={p.id} className="border-t hover:bg-gray-50 text-sm">
                 <td className="px-3 py-2">
-                  <Link className="text-blue-600" href={`/app/products/${p.id}`}>
+                  <Link className="text-blue-600" href={`/products/${p.id}`}>
                     {p.sku}
                   </Link>
                 </td>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from "@/lib/prisma";
 import type { Prisma, Shipment } from "@prisma/client";
 

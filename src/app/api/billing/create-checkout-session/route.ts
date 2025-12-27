@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Role } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";

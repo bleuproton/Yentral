@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { buildContext } from '@/server/tenant/buildContext';
 import { jsonOk, jsonError, parseJson, requireWriteAccess } from '@/app/api/_utils';

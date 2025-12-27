@@ -16,7 +16,7 @@ export default async function DashboardPage() {
   const session = await getServerAuthSession();
   if (!session?.user?.id) redirect('/');
   const tenantId = cookies().get('tenantId')?.value;
-  if (!tenantId) redirect('/app/settings/tenants');
+  if (!tenantId) redirect('/settings/tenants');
   const counts = await getCounts(tenantId);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

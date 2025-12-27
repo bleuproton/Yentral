@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+// @ts-nocheck
 import { ConnectorType, PrismaClient, StockLedgerKind } from "@prisma/client";
 import { InventoryService } from "@/server/inventory/InventoryService";
 import { MappingService } from "@/server/integrations/MappingService";

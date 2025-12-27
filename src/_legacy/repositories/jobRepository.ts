@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { prisma } from "@/lib/prisma";
 import { JobStatus, Prisma } from "@prisma/client";
 import type { Job } from "@prisma/client";

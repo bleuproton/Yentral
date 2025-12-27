@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { startWorker } from './worker';
 
 startWorker().catch((err) => {

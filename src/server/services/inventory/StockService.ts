@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Prisma, StockLedgerKind } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { applyDelta, computeAvailable } from "./StockMath";

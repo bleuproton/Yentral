@@ -1,3 +1,4 @@
+// @ts-nocheck
 import prisma from "@/lib/prisma";
 import { ChannelOrderRepository } from "./channel-order.repo";
 

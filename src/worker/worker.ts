@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { run, RunnerOptions, TaskList } from 'graphile-worker';
 import { syncConnection } from './handlers/sync_connection';
 

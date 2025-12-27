@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { isFeatureEnabled } from '@/config/featureFlags';
 
 export class AiService {

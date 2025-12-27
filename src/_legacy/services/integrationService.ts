@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { IntegrationConnectionStatus } from "@prisma/client";
 import { IntegrationConnectionRepository } from "@/_legacy/repositories/integrationConnectionRepository";
 

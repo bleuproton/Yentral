@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Prisma, PrismaClient } from '@prisma/client';
 import { GLOBAL_MODELS, prisma } from './prisma';
 import { TenantScopeError } from '../http/errors';

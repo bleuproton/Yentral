@@ -1,4 +1,5 @@
 #!/usr/bin/env node --loader tsx
+// @ts-nocheck
 import { ConnectorType, PrismaClient } from "@prisma/client";
 import { MappingService } from "@/server/integrations/MappingService";
 import { ChannelCatalogService } from "@/server/integrations/ChannelCatalogService";

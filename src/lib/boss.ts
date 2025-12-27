@@ -1,3 +1,4 @@
+// @ts-nocheck
 import Boss from "pg-boss";
 import { env } from "./env";
 

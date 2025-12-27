@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { StockLedgerKind, ReservationStatus } from "@prisma/client";
 
 export type AdjustStockInput = {

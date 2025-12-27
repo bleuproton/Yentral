@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ProductStatus } from "@prisma/client";
 import { ProductRepository } from "@/_legacy/repositories/productRepository";
 

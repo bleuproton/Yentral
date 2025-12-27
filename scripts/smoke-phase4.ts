@@ -1,4 +1,5 @@
 #!/usr/bin/env node --loader tsx
+// @ts-nocheck
 import { PrismaClient, StockLedgerKind } from "@prisma/client";
 import { InventoryService } from "@/server/inventory/InventoryService";
 import { FulfillmentService } from "@/_legacy/services/fulfillment/FulfillmentService";

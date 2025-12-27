@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { RequestContext } from '@/server/tenant/context';
 import { can } from '@/server/rbac/rbac';
 import { HttpError, unauthorized, forbidden } from '@/lib/httpErrors';

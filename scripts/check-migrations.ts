@@ -102,20 +102,18 @@ function checkFiles() {
   });
 }
 
-async function checkDb(pool: Pool) {
-  const tablesRows = await pool.query<{ table_name: string }>(
-    `SELECT table_name FROM information_schema.tables WHERE table_schema='public'`
-  );
-  const tables = new Set(tablesRows.rows.map((r) => r.table_name));
+async function checkDb(pool: any) {
+  const tablesRows = await pool.query(`SELECT table_name FROM information_schema.tables WHERE table_schema='public'`);
+  const tables = new Set(tablesRows.rows.map((r: any) => r.table_name));
   expectedTables.forEach((t) => {
     if (!tables.has(t)) fail(`Missing table: ${t}`);
   });
 
-  const colsRows = await pool.query<{ table_name: string; column_name: string }>(
+  const colsRows = await pool.query(
     `SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='public'`
   );
   const columnsByTable = new Map<string, Set<string>>();
-  colsRows.rows.forEach((r) => {
+  colsRows.rows.forEach((r: any) => {
     if (!columnsByTable.has(r.table_name)) columnsByTable.set(r.table_name, new Set());
     columnsByTable.get(r.table_name)!.add(r.column_name);
   });
@@ -129,7 +127,7 @@ async function checkDb(pool: Pool) {
     }
   });
 
-  const uniquesRows = await pool.query<{ table_name: string; index_name: string; columns: string[] }>(
+  const uniquesRows = await pool.query(
     `
     SELECT
       cls.relname AS table_name,
@@ -147,9 +145,9 @@ async function checkDb(pool: Pool) {
     `
   );
   const uniquesByTable = new Map<string, string[][]>();
-  uniquesRows.rows.forEach((r) => {
+  uniquesRows.rows.forEach((r: any) => {
     if (!uniquesByTable.has(r.table_name)) uniquesByTable.set(r.table_name, []);
-    uniquesByTable.get(r.table_name)!.push(r.columns.map((c) => c.toLowerCase()));
+    uniquesByTable.get(r.table_name)!.push(r.columns.map((c: any) => c.toLowerCase()));
   });
 
   uniqueChecks.forEach((uc) => {

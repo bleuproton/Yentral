@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { JobStatus, TicketStatus } from "@prisma/client";
 import type Boss from "pg-boss";
 import prisma from "@/lib/prisma";

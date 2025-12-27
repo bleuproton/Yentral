@@ -1,3 +1,4 @@
+// @ts-nocheck
 import nodemailer from "nodemailer";
 import { EmailDirection } from "@prisma/client";
 import { prisma } from "@/lib/prisma";

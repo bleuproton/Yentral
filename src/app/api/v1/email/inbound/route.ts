@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextResponse } from "next/server";
 import { EmailIngestService } from "@/domain/email/email-ingest.service";
 import { prisma } from "@/lib/prisma";

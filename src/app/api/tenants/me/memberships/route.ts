@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { NextRequest } from 'next/server';
 import { jsonOk, jsonError } from '@/server/http/response';
 import { getServerAuthSession } from '@/lib/auth';

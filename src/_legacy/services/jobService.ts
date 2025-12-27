@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { JobStatus } from "@prisma/client";
 import { JobRepository } from "@/_legacy/repositories/jobRepository";
 

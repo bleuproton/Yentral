@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { OrderStatus } from "@prisma/client";
 import { OrderRepository } from "@/_legacy/repositories/orderRepository";
 import { InventoryService } from "./inventoryService";

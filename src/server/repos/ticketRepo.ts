@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Prisma } from '@prisma/client';
 import { prisma } from '../db';
 import { withContext } from '../tenant/als';

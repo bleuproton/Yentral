@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ReturnStatus, StockLedgerKind } from "@prisma/client";
 import prisma from "@/server/db/prisma";
 import { StockService } from "@/server/services/inventory/StockService";

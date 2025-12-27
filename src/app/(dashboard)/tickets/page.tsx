@@ -67,7 +67,7 @@ export default function TicketsPage() {
           {tickets.map((t) => (
             <tr key={t.id} className="border-t">
               <td className="px-2 py-1">
-                <Link className="text-blue-600" href={`/app/tickets/${t.id}`}>
+                <Link className="text-blue-600" href={`/tickets/${t.id}`}>
                   {t.title}
                 </Link>
               </td>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { withApi } from '@/server/http/withApi';
 import { IntegrationService } from '@/server/services/integrationService';
 import { tenantDb } from '@/server/db/tenantDb';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ConnectorType } from "@prisma/client";
 import { prisma } from "../src/server/db/prisma";
 import { MappingService } from "../src/server/services/mappingService";

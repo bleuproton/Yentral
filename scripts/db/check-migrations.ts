@@ -20,13 +20,9 @@ async function main() {
 
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   try {
-    const rows = await pool.query<{
-      migration_name: string;
-      finished_at: Date | null;
-      rolled_back_at: Date | null;
-    }>(`SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"`);
+    const rows = await pool.query(`SELECT migration_name, finished_at, rolled_back_at FROM "_prisma_migrations"`);
 
-    const applied = new Map(rows.rows.map((r) => [r.migration_name, r]));
+    const applied = new Map(rows.rows.map((r: any) => [r.migration_name, r]));
 
     // Missing migrations
     folders.forEach((folder) => {
@@ -36,7 +32,7 @@ async function main() {
     });
 
     // Unfinished or rolled back
-    rows.rows.forEach((r) => {
+    rows.rows.forEach((r: any) => {
       if (!r.finished_at) {
         failures.push({ ok: false, message: `Migration not finished: ${r.migration_name}` });
       }

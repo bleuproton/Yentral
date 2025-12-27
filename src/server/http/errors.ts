@@ -16,6 +16,12 @@ export class AuthRequiredError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Unauthorized') {
+    super(401, 'UNAUTHORIZED', message);
+  }
+}
+
 export class TenantRequiredError extends AppError {
   constructor(message = 'Tenant required') {
     super(400, 'TENANT_REQUIRED', message);
@@ -28,6 +34,12 @@ export class ForbiddenTenantError extends AppError {
   }
 }
 
+export class ForbiddenError extends AppError {
+  constructor(message = 'Forbidden') {
+    super(403, 'FORBIDDEN', message);
+  }
+}
+
 export class NotFoundError extends AppError {
   constructor(message = 'Not found') {
     super(404, 'NOT_FOUND', message);
@@ -37,6 +49,12 @@ export class NotFoundError extends AppError {
 export class TenantScopeError extends AppError {
   constructor(message = 'Missing or invalid tenant scope') {
     super(403, 'TENANT_SCOPE', message);
+  }
+}
+
+export class BadRequestError extends AppError {
+  constructor(message = 'Bad request') {
+    super(400, 'BAD_REQUEST', message);
   }
 }
 

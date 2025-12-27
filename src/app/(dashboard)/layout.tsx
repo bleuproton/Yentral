@@ -18,7 +18,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const cookieStore = cookies();
   const activeTenant = cookieStore.get('tenantId')?.value || memberships[0]?.tenantId;
   if (!activeTenant && memberships.length === 0) {
-    redirect('/app/settings/tenants');
+    redirect('/settings/tenants');
   }
   if (activeTenant && (!cookieStore.get('tenantId') || cookieStore.get('tenantId')?.value !== activeTenant)) {
     cookieStore.set('tenantId', activeTenant, { path: '/', httpOnly: false });

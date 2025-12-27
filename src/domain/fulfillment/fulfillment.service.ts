@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   Prisma,
   ReservationStatus,

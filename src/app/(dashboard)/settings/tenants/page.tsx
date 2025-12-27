@@ -15,7 +15,7 @@ export default async function TenantsSettingsPage() {
     'use server';
     const cookieStore = cookies();
     cookieStore.set('tenantId', tenantId, { path: '/', httpOnly: false });
-    redirect('/app/dashboard');
+    redirect('/');
   }
   return (
     <div>
