@@ -1,19 +1,32 @@
-import { withApi } from '@/server/http/withApi';
+import { NextRequest } from 'next/server';
+import { buildContext } from '@/server/tenant/buildContext';
+import { jsonOk, jsonError, parseJson, requireWriteAccess } from '@/app/api/_utils';
 import { TicketService } from '@/server/services/ticketService';
-import { tenantDb } from '@/server/db/tenantDb';
-import { jsonOk, created } from '@/server/http/response';
-import { parseJson } from '@/server/validation/zod';
-import { TicketCreateSchema } from '@/server/schemas/ticket';
+import { TicketCreateSchema } from '@/server/validators/ticket';
 
-export const GET = withApi(async (ctx) => {
-  const service = new TicketService(tenantDb(ctx.tenantId), ctx.tenantId, ctx.actorUserId || '');
-  const tickets = await service.list({});
-  return jsonOk(tickets);
-});
+export async function GET(req: NextRequest) {
+  try {
+    const ctx = await buildContext(req);
+    const status = req.nextUrl.searchParams.get('status') || undefined;
+    const service = new TicketService();
+    const tickets = await service.listTickets(ctx, { status });
+    return jsonOk(tickets);
+  } catch (err) {
+    return jsonError(err);
+  }
+}
 
-export const POST = withApi(async (ctx) => {
-  const body = await parseJson(ctx.req, TicketCreateSchema);
-  const service = new TicketService(tenantDb(ctx.tenantId), ctx.tenantId, ctx.actorUserId || '');
-  const ticket = await service.create(body);
-  return created(ticket);
-});
+export async function POST(req: NextRequest) {
+  try {
+    const ctx = await buildContext(req);
+    if (!ctx.userId) {
+      return jsonError(new Error('User required to create ticket'));
+    }
+    const body = TicketCreateSchema.parse(await parseJson(req));
+    const service = new TicketService();
+    const ticket = await service.createTicketAndLinkThread(ctx, { ...body, authorId: ctx.userId });
+    return jsonOk(ticket, 201);
+  } catch (err) {
+    return jsonError(err);
+  }
+}

@@ -1,34 +1,26 @@
-import { PrismaClient } from '@prisma/client';
-import { TicketCreateSchema, TicketUpdateSchema } from '../schemas/ticket';
-import { TicketRepository } from '../repositories/ticketRepository';
-import { writeAudit } from '../audit/audit';
+import { RequestContext } from '../tenant/context';
+import { TicketRepo } from '../repos/ticketRepo';
+import { prisma } from '../db';
+import { withContext } from '../tenant/als';
 
 export class TicketService {
-  constructor(private prisma: PrismaClient, private tenantId: string, private actorUserId: string) {}
+  private repo = new TicketRepo();
 
-  repo() {
-    return new TicketRepository(this.prisma, this.tenantId);
+  async createTicketAndLinkThread(ctx: RequestContext, data: any) {
+    if (data.emailThreadId) {
+      const thread = await withContext(ctx, () =>
+        prisma.emailThread.findUnique({
+          where: { tenantId_id: { tenantId: ctx.tenantId, id: data.emailThreadId } },
+        })
+      );
+      if (!thread) {
+        throw new Error('Email thread not found for tenant');
+      }
+    }
+    return this.repo.createTicket(ctx, data);
   }
 
-  list(filters: { status?: string }) {
-    return this.repo().listTickets(filters);
-  }
-
-  async create(input: unknown) {
-    const data = TicketCreateSchema.parse(input);
-    const ticket = await this.repo().createTicket(this.actorUserId, data);
-    await writeAudit(this.tenantId, this.actorUserId, 'ticket.create', 'Ticket', ticket.id, data);
-    return ticket;
-  }
-
-  get(ticketId: string) {
-    return this.repo().getTicket(ticketId);
-  }
-
-  async update(ticketId: string, input: unknown) {
-    const data = TicketUpdateSchema.parse(input);
-    const ticket = await this.repo().updateTicket(ticketId, data);
-    await writeAudit(this.tenantId, this.actorUserId, 'ticket.update', 'Ticket', ticket.id, data);
-    return ticket;
+  listTickets(ctx: RequestContext, filters: any) {
+    return this.repo.listTickets(ctx, filters);
   }
 }

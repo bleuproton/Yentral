@@ -1,16 +1,27 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { TicketService } from "@/_legacy/services/ticketService";
+import { NextRequest } from 'next/server';
+import { buildContext } from '@/server/tenant/buildContext';
+import { jsonOk, jsonError, parseJson, requireWriteAccess } from '@/app/api/_utils';
+import { TicketService } from '@/server/services/ticketService';
+import { TicketRepo } from '@/server/repos/ticketRepo';
+import { TicketUpdateSchema } from '@/server/validators/ticket';
 
-const service = new TicketService();
-
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const ticket = await service["repo"].getById(session.tenantId, params.id);
-  if (!ticket) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const comments = await service["repo"].listComments(session.tenantId, params.id);
-  return NextResponse.json({ ticket, comments });
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const ctx = await buildContext(req);
+    requireWriteAccess(ctx, 'ticket.write');
+    const body = TicketUpdateSchema.parse(await parseJson(req));
+    const repo = new TicketRepo();
+    let result;
+    if (body.status) {
+      result = await repo.updateTicketStatus(ctx, params.id, body.status);
+    } else {
+      // fallback: no status provided, return current ticket
+      const svc = new TicketService();
+      const tickets = await svc.listTickets(ctx, {});
+      result = tickets.find((t) => t?.id === params.id);
+    }
+    return jsonOk(result);
+  } catch (err) {
+    return jsonError(err);
+  }
 }

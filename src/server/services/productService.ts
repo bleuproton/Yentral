@@ -1,65 +1,42 @@
-import { PrismaClient } from '@prisma/client';
-import { ProductRepository } from '../repositories/productRepository';
-import { ProductCreateSchema, ProductUpdateSchema, VariantCreateSchema, VariantUpdateSchema } from '../schemas/product';
-import { writeAudit } from '../audit/audit';
+import { RequestContext } from '../tenant/context';
+import { ProductRepo } from '../repos/productRepo';
+import { VariantRepo } from '../repos/variantRepo';
+import { withContext } from '../tenant/als';
+import { prisma } from '../db';
 
 export class ProductService {
-  constructor(private prisma: PrismaClient, private tenantId: string, private actorUserId: string) {}
+  private products = new ProductRepo();
+  private variants = new VariantRepo();
 
-  repo() {
-    return new ProductRepository(this.prisma, this.tenantId);
-  }
-
-  async listProducts(filters: { q?: string; status?: string }) {
-    return this.repo().listProducts(filters);
-  }
-
-  async createProduct(input: unknown) {
-    const data = ProductCreateSchema.parse(input);
-    const product = await this.repo().createProduct(data);
-    await writeAudit(this.tenantId, this.actorUserId, 'product.create', 'Product', product.id, { sku: product.sku });
+  async createProductWithDefaultVariant(ctx: RequestContext, productData: any, variantSku?: string) {
+    const product = await this.products.createProduct(ctx, productData);
+    if (variantSku) {
+      await this.variants.createVariant(ctx, {
+        productId: product.id,
+        sku: variantSku,
+      } as any);
+    }
     return product;
   }
 
-  async getProduct(productId: string) {
-    const product = await this.repo().getProduct(productId);
-    return product;
+  async ensureProductVariant(ctx: RequestContext, productId: string) {
+    const existing = await this.variants.listVariantsByProduct(ctx, productId);
+    if (existing.length > 0) return existing[0];
+    return this.variants.createVariant(ctx, {
+      productId,
+      sku: `VAR-${Date.now()}`,
+    } as any);
   }
 
-  async updateProduct(productId: string, input: unknown) {
-    const data = ProductUpdateSchema.parse(input);
-    const product = await this.repo().updateProduct(productId, data);
-    await writeAudit(this.tenantId, this.actorUserId, 'product.update', 'Product', product.id, data);
-    return product;
+  async list(ctx: RequestContext, filters: any) {
+    return this.products.listProducts(ctx, filters);
   }
 
-  async deleteProduct(productId: string) {
-    const product = await this.repo().deleteProduct(productId);
-    await writeAudit(this.tenantId, this.actorUserId, 'product.delete', 'Product', product.id);
-    return product;
+  async update(ctx: RequestContext, id: string, data: any) {
+    return this.products.updateProduct(ctx, id, data);
   }
 
-  async listVariants(productId: string) {
-    return this.repo().listVariants(productId);
-  }
-
-  async createVariant(productId: string, input: unknown) {
-    const data = VariantCreateSchema.parse(input);
-    const variant = await this.repo().createVariant(productId, data);
-    await writeAudit(this.tenantId, this.actorUserId, 'variant.create', 'ProductVariant', variant.id, { sku: variant.sku });
-    return variant;
-  }
-
-  async updateVariant(variantId: string, input: unknown) {
-    const data = VariantUpdateSchema.parse(input);
-    const variant = await this.repo().updateVariant(variantId, data);
-    await writeAudit(this.tenantId, this.actorUserId, 'variant.update', 'ProductVariant', variant.id, data);
-    return variant;
-  }
-
-  async deleteVariant(variantId: string) {
-    const variant = await this.repo().deleteVariant(variantId);
-    await writeAudit(this.tenantId, this.actorUserId, 'variant.delete', 'ProductVariant', variant.id);
-    return variant;
+  async get(ctx: RequestContext, id: string) {
+    return this.products.getProduct(ctx, id);
   }
 }

@@ -1,27 +1,14 @@
-import { PrismaClient } from '@prisma/client';
-import { JobRepository } from '../repositories/jobRepository';
-import { JobEnqueueSchema } from '../schemas/job';
-import { writeAudit } from '../audit/audit';
+import { RequestContext } from '../tenant/context';
+import { JobRepo } from '../repos/jobRepo';
 
 export class JobService {
-  constructor(private prisma: PrismaClient, private tenantId: string, private actorUserId: string) {}
+  private repo = new JobRepo();
 
-  repo() {
-    return new JobRepository(this.prisma, this.tenantId);
+  enqueue(ctx: RequestContext, data: any) {
+    return this.repo.enqueueJob(ctx, data);
   }
 
-  async enqueue(input: unknown) {
-    const data = JobEnqueueSchema.parse(input);
-    const job = await this.repo().enqueueJob(data);
-    await writeAudit(this.tenantId, this.actorUserId, 'job.enqueue', 'Job', job.id, { type: job.type });
-    return job;
-  }
-
-  list(filters: { status?: string }) {
-    return this.repo().listJobs(filters);
-  }
-
-  get(jobId: string) {
-    return this.repo().getJob(jobId);
+  list(ctx: RequestContext, filters: any) {
+    return this.repo.listJobs(ctx, filters);
   }
 }

@@ -1,51 +1,41 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { z } from "zod";
-import { authOptions } from "@/lib/auth";
-import { ProductService } from "@/_legacy/services/productService";
-import { ProductStatus } from "@prisma/client";
+import { NextRequest } from 'next/server';
+import { buildContext } from '@/server/tenant/buildContext';
+import { jsonOk, jsonError, parseJson, requireWriteAccess } from '@/app/api/_utils';
+import { ProductService } from '@/server/services/productService';
+import { ProductUpdateSchema } from '@/server/validators/product';
 
-const service = new ProductService();
-
-export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const product = await service["repo"].getById(session.tenantId, params.id);
-  if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(product);
-}
-
-const updateSchema = z.object({
-  name: z.string().optional(),
-  description: z.string().optional(),
-  status: z.nativeEnum(ProductStatus).optional()
-});
-
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const body = await req.json();
-  const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await service.updateProduct(session.tenantId, params.id, parsed.data);
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    const ctx = await buildContext(req);
+    const service = new ProductService();
+    const product = await service.get(ctx, params.id);
+    return jsonOk(product);
+  } catch (err) {
+    return jsonError(err);
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
-    await service["repo"].delete(session.tenantId, params.id);
-    return NextResponse.json({ ok: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    const ctx = await buildContext(req);
+    requireWriteAccess(ctx, 'product.write');
+    const body = ProductUpdateSchema.parse(await parseJson(req));
+    const service = new ProductService();
+    const updated = await service.update(ctx, params.id, body);
+    return jsonOk(updated);
+  } catch (err) {
+    return jsonError(err);
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const ctx = await buildContext(req);
+    requireWriteAccess(ctx, 'product.write');
+    const service = new ProductService();
+    const updated = await service.update(ctx, params.id, { status: 'ARCHIVED' } as any);
+    return jsonOk(updated);
+  } catch (err) {
+    return jsonError(err);
   }
 }

@@ -1,7 +1,9 @@
 import { PrismaClient } from '@prisma/client';
 import basePrisma from '@/lib/prisma';
+import { applyTenantGuard } from './tenantGuard';
 
 export const prisma: PrismaClient = basePrisma;
+applyTenantGuard(prisma);
 
 export const GLOBAL_MODELS = new Set<string>([
   'User',
