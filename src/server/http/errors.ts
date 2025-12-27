@@ -58,6 +58,11 @@ export class BadRequestError extends AppError {
   }
 }
 
+export const badRequest = (message = 'Bad request') => new BadRequestError(message);
+export const unauthorized = (message = 'Unauthorized') => new UnauthorizedError(message);
+export const forbidden = (message = 'Forbidden') => new ForbiddenError(message);
+export const notFound = (message = 'Not found') => new NotFoundError(message);
+
 export function toHttpResponse(err: any) {
   if (err instanceof AppError) {
     return { status: err.statusCode, body: { ok: false, error: { code: err.code, message: err.message } } };

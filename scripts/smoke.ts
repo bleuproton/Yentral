@@ -410,11 +410,58 @@ async function suiteWorker() {
   await suitePhase7();
 }
 
+async function suitePhase7a() {
+  const tenantA = await prisma.tenant.upsert({
+    where: { slug: 'smoke-a' },
+    update: { name: 'Smoke A' },
+    create: { slug: 'smoke-a', name: 'Smoke A' },
+  });
+  const tenantB = await prisma.tenant.upsert({
+    where: { slug: 'smoke-b' },
+    update: { name: 'Smoke B' },
+    create: { slug: 'smoke-b', name: 'Smoke B' },
+  });
+
+  const { tenantDb } = await import('../src/server/db/tenantDb');
+  const dbA = tenantDb(tenantA.id);
+  const dbB = tenantDb(tenantB.id);
+
+  const prodA = await dbA.product.upsert({
+    where: { tenantId_sku: { tenantId: tenantA.id, sku: 'SMOKE-A-1' } },
+    update: { name: 'A1' },
+    create: { tenantId: tenantA.id, sku: 'SMOKE-A-1', name: 'A1', priceCents: 100 },
+  });
+  const prodB = await dbB.product.upsert({
+    where: { tenantId_sku: { tenantId: tenantB.id, sku: 'SMOKE-B-1' } },
+    update: { name: 'B1' },
+    create: { tenantId: tenantB.id, sku: 'SMOKE-B-1', name: 'B1', priceCents: 200 },
+  });
+
+  let threw = false;
+  try {
+    await dbA.product.findUnique({ where: { id: prodB.id } });
+  } catch {
+    threw = true;
+  }
+  if (!threw) fail('Phase7a: tenant guard did not block missing tenantId query');
+
+  const leak = await dbA.product.findUnique({
+    where: { tenantId_id: { tenantId: tenantA.id, id: prodB.id } },
+  });
+  if (leak) fail('Phase7a: cross-tenant read succeeded');
+
+  const productsA = await dbA.product.findMany({ where: { tenantId: tenantA.id } });
+  if (!productsA.find((p) => p.id === prodA.id)) fail('Phase7a: tenant A product not found');
+}
+
 async function main() {
   const suite = process.argv[2];
-  if (!suite) fail('Pass suite name (phase2-3|phase4|phase5|phase6|fulfillment|phase7|worker)');
+  if (!suite) fail('Pass suite name (phase7a|phase2-3|phase4|phase5|phase6|fulfillment|phase7|worker)');
   try {
     switch (suite) {
+      case 'phase7a':
+        await suitePhase7a();
+        break;
       case 'phase2-3':
         await suitePhase2_3();
         break;
@@ -437,6 +484,22 @@ async function main() {
         await suitePhase6();
         await suiteFulfillment();
         await suitePhase7();
+        break;
+      case 'phase7b':
+        await suitePhase7a();
+        // enqueue test.noop job
+        const tenant = await getOrCreateTenant(prisma);
+        const job = await prisma.job.upsert({
+          where: { tenantId_dedupeKey: { tenantId: tenant.id, dedupeKey: 'test-noop' } },
+          update: { status: 'PENDING', attempts: 0, lockedAt: null, nextRunAt: null, payload: {} },
+          create: { tenantId: tenant.id, type: 'test.noop', dedupeKey: 'test-noop', payload: {}, maxAttempts: 3 },
+        });
+        const { processOnce } = await import('../worker/index');
+        await processOnce();
+        const refreshed = await prisma.job.findUnique({ where: { id: job.id } });
+        const run = await prisma.jobRun.findFirst({ where: { jobId: job.id, tenantId: tenant.id } });
+        if (!refreshed || refreshed.status !== 'COMPLETED') fail('Phase7b: job not completed');
+        if (!run) fail('Phase7b: jobRun missing');
         break;
       case 'worker':
         await suiteWorker();

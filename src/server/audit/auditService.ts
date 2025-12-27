@@ -24,3 +24,5 @@ export async function writeAuditEvent(params: {
     // best-effort
   }
 }
+
+export const recordAudit = writeAuditEvent;

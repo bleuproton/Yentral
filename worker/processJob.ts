@@ -1,10 +1,16 @@
 import { Job, JobStatus } from '@prisma/client';
-import { prisma, tenantDb, writeAuditEvent } from './deps';
+import { prisma } from './deps';
 import { runJobHandler } from './handlers';
+import { randomUUID } from 'crypto';
+import { logError, logInfo } from '@/server/jobs/logger';
 
 const MAX_BACKOFF_MIN = 240;
 
 export async function processJob(job: Job) {
+  if (!job.tenantId) {
+    throw new Error('Job missing tenantId');
+  }
+  const correlationId = (job as any).correlationId || randomUUID();
   const run = await prisma.jobRun.create({
     data: {
       tenantId: job.tenantId,
@@ -17,7 +23,8 @@ export async function processJob(job: Job) {
   });
 
   try {
-    await runJobHandler(job);
+    await runJobHandler(job, correlationId);
+    logInfo(job.tenantId, job.id, correlationId, 'job.completed');
     await prisma.job.update({
       where: { id: job.id },
       data: {
@@ -32,6 +39,7 @@ export async function processJob(job: Job) {
       data: { status: JobStatus.COMPLETED, finishedAt: new Date() },
     });
   } catch (err: any) {
+    logError(job.tenantId, job.id, correlationId, err?.message ?? 'Job failed');
     const attempts = job.attempts;
     const backoffMin = Math.min(Math.pow(2, attempts), MAX_BACKOFF_MIN);
     const retry = attempts < job.maxAttempts;

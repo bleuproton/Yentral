@@ -2,10 +2,10 @@ import { HttpError } from '@/lib/httpErrors';
 import { prisma } from '../db/prisma';
 import { resolveAuthFromRequest } from '../auth/resolveAuth';
 import { Role, RequestContext } from './context';
-import { resolveTenantIdFromRequest } from './resolveTenant';
+import { resolveTenantIdWithSlug } from './resolveTenant';
 
 export async function buildContext(req: Request): Promise<RequestContext> {
-  const tenantId = resolveTenantIdFromRequest(req);
+  const tenantId = await resolveTenantIdWithSlug(undefined, req);
   if (!tenantId) {
     throw new HttpError(400, 'TENANT_MISSING', 'Tenant header or cookie required');
   }

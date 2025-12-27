@@ -3,6 +3,7 @@ import { Job } from '@prisma/client';
 
 export async function claimJobs(limit: number): Promise<Job[]> {
   const now = new Date();
+  const lockTimeoutMinutes = Number(process.env.WORKER_LOCK_TIMEOUT_MIN || 5);
   return prisma.$transaction(async (tx) => {
     const claimed = await tx.$queryRaw<Job[]>`
       WITH cte AS (
@@ -11,7 +12,7 @@ export async function claimJobs(limit: number): Promise<Job[]> {
         WHERE status = 'PENDING'
           AND ( "scheduledAt" IS NULL OR "scheduledAt" <= now() )
           AND ( "nextRunAt" IS NULL OR "nextRunAt" <= now() )
-          AND ( "lockedAt" IS NULL )
+          AND ( "lockedAt" IS NULL OR "lockedAt" < now() - interval '${lockTimeoutMinutes} minutes' )
         ORDER BY priority DESC, "createdAt" ASC
         LIMIT ${limit}
         FOR UPDATE SKIP LOCKED

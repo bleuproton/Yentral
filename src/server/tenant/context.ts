@@ -6,6 +6,7 @@ export type RequestContext = {
   tenantId: string;
   userId?: string;
   role?: Role;
+  tenantSlug?: string;
 };
 
 export function requireTenant(ctx: RequestContext) {
