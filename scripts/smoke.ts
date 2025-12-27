@@ -376,9 +376,38 @@ async function suiteFulfillment() {
   if (shipLineCount === 0) fail('Fulfillment: shipment line missing');
 }
 
+async function suitePhase7() {
+  const tenant = await getOrCreateTenant(prisma);
+  const { version } = await getOrCreateConnectorAndVersion(prisma, 'smoke-connector', '1.0.0');
+  const connection = await getOrCreateConnection(prisma, tenant.id, version.id, 'Smoke Connection');
+
+  // Enqueue job
+  const job = await prisma.job.upsert({
+    where: { tenantId_dedupeKey: { tenantId: tenant.id, dedupeKey: `sync:connection:${connection.id}` } },
+    update: { payload: { connectionId: connection.id }, attempts: 0, status: 'PENDING', lockedAt: null, nextRunAt: null },
+    create: {
+      tenantId: tenant.id,
+      type: 'SYNC_CONNECTION',
+      payload: { connectionId: connection.id },
+      dedupeKey: `sync:connection:${connection.id}`,
+      maxAttempts: 3,
+    },
+  });
+
+  // Run worker once
+  const { processOnce } = await import('@/worker/worker');
+  await processOnce();
+
+  const refreshedJob = await prisma.job.findUnique({ where: { id: job.id } });
+  const conn = await prisma.integrationConnection.findUnique({
+    where: { tenantId_id: { tenantId: tenant.id, id: connection.id } },
+  });
+  if (!refreshedJob || refreshedJob.status !== 'COMPLETED') fail('Phase7: job not completed');
+  if (!conn?.lastSyncAt) fail('Phase7: lastSyncAt not set');
+}
 async function main() {
   const suite = process.argv[2];
-  if (!suite) fail('Pass suite name (phase2-3|phase4|phase5|phase6|fulfillment)');
+  if (!suite) fail('Pass suite name (phase2-3|phase4|phase5|phase6|fulfillment|phase7)');
   try {
     switch (suite) {
       case 'phase2-3':
@@ -395,6 +424,14 @@ async function main() {
         break;
       case 'fulfillment':
         await suiteFulfillment();
+        break;
+    case 'phase7':
+        await suitePhase2_3();
+        await suitePhase4();
+        await suitePhase5();
+        await suitePhase6();
+        await suiteFulfillment();
+        await suitePhase7();
         break;
       default:
         fail(`Unknown suite ${suite}`);

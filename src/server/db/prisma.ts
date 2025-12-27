@@ -1,18 +1,26 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from '@prisma/client';
+import basePrisma from '@/lib/prisma';
 
-declare global {
-  // eslint-disable-next-line no-var
-  var prisma: PrismaClient | undefined;
+export const prisma: PrismaClient = basePrisma;
+
+export const GLOBAL_MODELS = new Set<string>([
+  'User',
+  'Account',
+  'Session',
+  'VerificationToken',
+  'Jurisdiction',
+  'Connector',
+  'ConnectorVersion',
+  'Plugin',
+  'Tenant',
+]);
+
+export type { PrismaClient } from '@prisma/client';
+
+export async function withTx<T>(fn: (tx: PrismaClient) => Promise<T>): Promise<T> {
+  return prisma.$transaction(async (tx) => fn(tx as PrismaClient));
 }
 
-export const prisma =
-  global.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"]
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  global.prisma = prisma;
+export function getPrisma(): PrismaClient {
+  return prisma;
 }
-
-export default prisma;
