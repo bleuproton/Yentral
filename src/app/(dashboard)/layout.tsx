@@ -3,10 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerAuthSession } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getActiveTenantId } from "@/lib/tenant";
-import { Role } from "@prisma/client";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
-import { DashboardHeader } from "@/components/dashboard/header";
-import styles from "./dashboard.module.css";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const devBypass = process.env.NODE_ENV === "development" && process.env.DEV_BYPASS_AUTH === "1";
@@ -29,17 +26,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   if (!activeTenant) {
     redirect("/select-tenant");
   }
-  const currentMembership = memberships.find((m) => m.tenantId === activeTenant);
-  const role = (currentMembership?.role as Role | undefined) ?? undefined;
+
   return (
-    <div className={styles.root}>
+    <div className="dark min-h-screen bg-[#0b0b0f] text-gray-50 flex">
       <DashboardSidebar />
-      <div className={styles.content}>
-        <div className={styles.header}>
-          <DashboardHeader title="Dashboard" description="Multi-tenant commerce console" />
-        </div>
-        <main className={styles.main}>
-          <div className={styles.inner}>{children}</div>
+      <div className="flex-1 lg:pl-72">
+        <main className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="max-w-7xl mx-auto space-y-6">{children}</div>
         </main>
       </div>
     </div>
