@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getServerAuthSession } from '@/lib/auth';
 
@@ -8,11 +9,10 @@ async function setTenant(formData: FormData) {
   if (!tenantId) {
     return;
   }
-  await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/tenant/select`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ tenantId }),
-  });
+  // Set tenant cookie directly in this server action to avoid client round-trip
+  const store = cookies();
+  const secure = process.env.NODE_ENV === 'production';
+  store.set('tenantId', tenantId, { path: '/', httpOnly: true, sameSite: 'lax', secure });
   redirect('/dashboard');
 }
 

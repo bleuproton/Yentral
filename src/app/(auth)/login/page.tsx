@@ -56,7 +56,7 @@ export default function LoginPage() {
               <h1 className={styles.title}>Sign in to the seller&apos;s panel</h1>
             </div>
 
-            <div className={styles.formGrid}>
+            <form className={styles.formGrid} onSubmit={onSubmit}>
               <div className="space-y-2">
                 <label className={styles.label}>Login</label>
                 <input
@@ -125,7 +125,7 @@ export default function LoginPage() {
               <p className={styles.footerHint}>
                 Dev user: admin@yentral.local / Admin123! · tenant: demo
               </p>
-            </div>
+            </form>
           </div>
         </div>
       </div>
