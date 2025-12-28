@@ -6,6 +6,7 @@ import { getActiveTenantId } from "@/lib/tenant";
 import { Role } from "@prisma/client";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
+import styles from "./dashboard.module.css";
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const devBypass = process.env.NODE_ENV === "development" && process.env.DEV_BYPASS_AUTH === "1";
@@ -31,14 +32,14 @@ export default async function DashboardLayout({ children }: { children: ReactNod
   const currentMembership = memberships.find((m) => m.tenantId === activeTenant);
   const role = (currentMembership?.role as Role | undefined) ?? undefined;
   return (
-    <div className="min-h-screen flex bg-slate-50 text-slate-900">
+    <div className={styles.root}>
       <DashboardSidebar />
-      <div className="flex-1 flex flex-col">
-        <div className="px-6 pt-6">
+      <div className={styles.content}>
+        <div className={styles.header}>
           <DashboardHeader title="Dashboard" description="Multi-tenant commerce console" />
         </div>
-        <main className="flex-1 p-6">
-          <div className="max-w-6xl mx-auto">{children}</div>
+        <main className={styles.main}>
+          <div className={styles.inner}>{children}</div>
         </main>
       </div>
     </div>
