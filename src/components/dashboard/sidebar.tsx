@@ -12,7 +12,7 @@ export function DashboardSidebar() {
     <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col border-r border-[#1f1f1f] bg-[#111] text-gray-200">
       <div className="px-5 py-6 space-y-6">
         <div>
-          <div className="text-xl font-semibold">Acme Inc.</div>
+          <div className="text-xl font-semibold">Yentral</div>
           <div className="text-xs text-gray-500">Documents</div>
         </div>
         <div className="space-y-2">
