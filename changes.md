@@ -1,5 +1,7 @@
 # Changes Log
 
+- 2025-12-29 00:27:41 CET — Prompt: “fix de dashboard styling / shadcn UI en log de prompt in changes.md”. Changes: shadcn/Tailwind dark dashboard shell (sidebar/topbar/content) en stat cards geherstyled, quick actions/overview secties vernieuwd; shadcn UI files voor dropdown-menu en sheet toegevoegd; cn-helper vereenvoudigd om ontbrekende deps te vermijden; tailwind.config plugin tailwindcss-animate toegevoegd; Radix/shadcn deps in package.json opgenomen (npm install nog lokaal uitvoeren).
+- 2025-12-29 00:33:36 CET — Prompt: “fix de ui zonder de code te breken (globals.css ES module error)”. Changes: postcss config omgezet naar CommonJS (`postcss.config.cjs`) zodat Next/css-loader in ESM-project niet meer “module is not defined” gooit; oude `postcss.config.js` verwijderd.
 - 2025-12-24: Initial scaffolding, README updates, architecture docs, product/integration/job/support API routes, repositories/services, job engine, and seed data with tenant/org/jurisdictions/entities/tax profiles/warehouses/connectors.
 - 2025-12-24: Added state check tooling (`db:status`, `db:validate`, `db:generate`, `state:check`) and documentation.
 - 2025-12-25: Phase 1 tenant safety: added `tenantId` to User/Account/Session/OrderLine/Job/JobRun with tenant-scoped uniques; Product now requires `sku` with tenant-scoped unique; added Job dedupe/backoff fields; added AuditEvent model; created migration `20251225120000_tenant_safety_phase1` with backfill steps; updated seed/auth for tenant-scoped user lookup.

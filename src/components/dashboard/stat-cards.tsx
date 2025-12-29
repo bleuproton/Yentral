@@ -22,15 +22,24 @@ const defaultStats: StatCard[] = [
 export function StatCards({ stats = defaultStats }: { stats?: StatCard[] }) {
   return (
     <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map((stat) => (
-        <div key={stat.label} className="rounded-xl border border-[#1f1f1f] bg-[#121212] text-gray-100 shadow-sm p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="text-sm font-medium text-gray-400">{stat.label}</div>
+      {stats.map((stat, idx) => (
+        <div 
+          key={stat.label} 
+          className="group relative rounded-xl border border-[#1f1f1f] bg-gradient-to-br from-[#141414] to-[#0a0a0a] text-gray-100 shadow-sm p-5 space-y-3 hover:border-blue-600/50 hover:shadow-lg hover:shadow-blue-600/20 transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 overflow-hidden"
+          style={{ animationDelay: `${idx * 100}ms` }}
+        >
+          {/* Background gradient on hover */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-blue-600/5 to-cyan-600/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="text-sm font-medium text-gray-400 group-hover:text-gray-300 transition-colors">{stat.label}</div>
             <DeltaBadge trend={stat.trend} delta={stat.delta} />
           </div>
-          <div className="text-3xl font-semibold">{stat.value}</div>
-          {stat.helper ? <div className="text-sm font-semibold">{stat.helper}</div> : null}
-          {stat.detail ? <div className="text-xs text-gray-400">{stat.detail}</div> : null}
+          <div className="relative z-10 text-4xl font-bold bg-gradient-to-r from-gray-100 to-gray-300 bg-clip-text text-transparent group-hover:from-blue-200 group-hover:to-cyan-200 transition-all">
+            {stat.value}
+          </div>
+          {stat.helper ? <div className="relative z-10 text-sm font-semibold text-gray-300 group-hover:text-gray-200 transition-colors">{stat.helper}</div> : null}
+          {stat.detail ? <div className="relative z-10 text-xs text-gray-500 group-hover:text-gray-400 transition-colors">{stat.detail}</div> : null}
         </div>
       ))}
     </div>
@@ -44,7 +53,7 @@ function DeltaBadge({ trend, delta }: { trend?: "up" | "down"; delta: string }) 
       ? "text-red-400 bg-red-950/40 border-red-900"
       : "text-emerald-300 bg-emerald-950/40 border-emerald-900";
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full border", tone)}>
+    <span className={cn("inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full border font-semibold transition-all", tone)}>
       <Icon className="h-3 w-3" />
       {delta}
     </span>
