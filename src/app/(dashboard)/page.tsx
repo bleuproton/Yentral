@@ -38,6 +38,19 @@ export default async function DashboardPage() {
     { label: "🎫 Support Ticket", href: "/dashboard/support", icon: "🎫" },
   ];
 
+  const modules = [
+    { label: "Products", href: "/dashboard/products", emoji: "🛍️" },
+    { label: "Inventory", href: "/dashboard/inventory", emoji: "📦" },
+    { label: "Orders", href: "/dashboard/orders", emoji: "🧾" },
+    { label: "Fulfillment", href: "/dashboard/fulfillment", emoji: "🚚" },
+    { label: "Customers", href: "/dashboard/customers", emoji: "👥" },
+    { label: "Invoices", href: "/dashboard/invoices", emoji: "💳" },
+    { label: "Integrations", href: "/dashboard/integrations", emoji: "🔌" },
+    { label: "Support", href: "/dashboard/support", emoji: "🎧" },
+    { label: "Accounting", href: "/dashboard/accountant", emoji: "📒" },
+    { label: "Settings", href: "/dashboard/settings", emoji: "⚙️" },
+  ];
+
   const activities = [
     { title: "Integration sync completed", meta: "Amazon SP-API · 2h ago", icon: Zap, status: "success" },
     { title: "Invoice INV-1024 issued", meta: "Customer: Demo Corp · 4h ago", icon: Activity, status: "success" },
@@ -141,6 +154,27 @@ export default async function DashboardPage() {
                 <span className="text-xl">{qa.icon}</span>
                 <span className="text-sm">{qa.label.split(" ")[1]}</span>
               </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-blue-600/10 to-cyan-600/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Modules */}
+      <div className="rounded-xl border border-[#1f1f1f] bg-gradient-to-br from-[#141414] to-[#0a0a0a] p-6 space-y-4 hover:border-[#2a2a2a] transition-all">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Modules</h3>
+          <div className="text-xs text-gray-500">Navigatie overzicht</div>
+        </div>
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+          {modules.map((mod) => (
+            <Link
+              key={mod.label}
+              href={mod.href}
+              className="group relative overflow-hidden rounded-lg border border-[#1f1f1f] bg-[#111] px-4 py-4 text-center text-sm font-semibold text-gray-200 hover:border-blue-600/50 hover:shadow-lg hover:shadow-blue-600/20 transition-all duration-200"
+            >
+              <div className="text-2xl mb-2">{mod.emoji}</div>
+              <div className="group-hover:text-white transition-colors">{mod.label}</div>
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-blue-600/10 to-cyan-600/0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </Link>
           ))}

@@ -44,6 +44,29 @@ enum TicketStatus {
   CLOSED
 }
 
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum JournalSource {
+  INVOICE
+  PAYMENT
+  SHIPMENT
+  RETURN
+  MANUAL
+  ADJUSTMENT
+}
+
 enum ConnectorType {
   CHANNEL
   WMS
@@ -741,10 +764,81 @@ model AccountingPeriod {
 
   tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   legalEntity LegalEntity @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+  journalEntries JournalEntry[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, legalEntityId, startDate, endDate])
   @@index([tenantId, legalEntityId, status])
+}
+
+model Account {
+  id            String      @id @default(cuid())
+  tenantId      String
+  legalEntityId String
+  code          String
+  name          String
+  type          AccountType
+  parentId      String?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  legalEntity LegalEntity  @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+  parent      Account?     @relation("AccountToAccount", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Account[]    @relation("AccountToAccount")
+  journalLines JournalLine[]
+
+  @@unique([tenantId, legalEntityId, code])
+  @@unique([tenantId, id])
+  @@index([tenantId, legalEntityId, type])
+}
+
+model JournalEntry {
+  id              String         @id @default(cuid())
+  tenantId        String
+  legalEntityId   String
+  periodId        String?
+  status          JournalStatus  @default(DRAFT)
+  source          JournalSource?
+  bookingDate     DateTime
+  currency        String         @default("USD")
+  totalDebitCents Int            @default(0)
+  totalCreditCents Int           @default(0)
+  memo            String?
+  correlationId   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  tenant      Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  legalEntity LegalEntity     @relation(fields: [tenantId, legalEntityId], references: [tenantId, id], onDelete: Cascade)
+  period      AccountingPeriod? @relation(fields: [tenantId, periodId], references: [tenantId, id], onDelete: SetNull)
+  lines       JournalLine[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, legalEntityId, bookingDate])
+  @@index([tenantId, periodId])
+  @@index([tenantId, correlationId])
+}
+
+model JournalLine {
+  id        String   @id @default(cuid())
+  tenantId  String
+  entryId   String
+  accountId String
+  debitCents  Int    @default(0)
+  creditCents Int    @default(0)
+  memo      String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  entry   JournalEntry @relation(fields: [tenantId, entryId], references: [tenantId, id], onDelete: Cascade)
+  account Account      @relation(fields: [tenantId, accountId], references: [tenantId, id], onDelete: Restrict)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, entryId])
+  @@index([tenantId, accountId])
 }
 
 model PostingLock {
