@@ -27,7 +27,7 @@
 
 import { postgraphile } from 'postgraphile';
 import { createServer } from 'http';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
@@ -87,11 +87,10 @@ const middleware = postgraphile(DATABASE_URL, SCHEMA, {
   },
   
   // Add request-level pg settings (useful for multi-tenancy)
-  async pgSettings(req) {
+  additionalGraphQLContextFromRequest: async (req) => {
     // You can add custom logic here, e.g., setting tenant context
     return {
-      // Add any request-specific PostgreSQL settings
-      role: 'yentral_user', // Example: set a specific role
+      // Add any request-specific context
     };
   },
 });

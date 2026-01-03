@@ -33,7 +33,7 @@
 
 import { postgraphile, PostGraphileOptions } from 'postgraphile';
 import type { RequestHandler } from 'express';
-import dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 // Load environment variables
 dotenv.config();
@@ -142,20 +142,15 @@ export function createPostGraphileMiddleware(
     },
     
     // Request-level settings (useful for multi-tenancy)
-    async pgSettings(req) {
+    additionalGraphQLContextFromRequest: async (req) => {
       // You can add custom logic here based on the request
       // For example, set tenant context from authentication
-      const settings: Record<string, string> = {
-        role: 'yentral_user',
-      };
-      
-      // Example: Add tenant context if available
       // const tenantId = req.user?.tenantId;
       // if (tenantId) {
-      //   settings['app.current_tenant_id'] = tenantId;
+      //   return { tenantId };
       // }
       
-      return settings;
+      return {};
     },
     
     // Merge with any additional options provided
