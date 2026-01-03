@@ -185,6 +185,11 @@ pnpm smoke:accounting       # Test accounting
 pnpm state:check            # Check applicatie status
 pnpm db:check               # Check database health
 pnpm db:health              # Database health check
+
+# PostGraphile (GraphQL API)
+pnpm postgraphile           # Start PostGraphile server (CLI mode)
+pnpm postgraphile:cli       # Start PostGraphile CLI
+pnpm postgraphile:server    # Start PostGraphile programmatic server
 ```
 
 ## 🏗️ Projectstructuur
@@ -307,12 +312,54 @@ docker run -p 3000:3000 --env-file .env yentral:latest
 
 - **Framework**: Next.js 14 (App Router)
 - **Database**: PostgreSQL met Prisma ORM
+- **GraphQL**: PostGraphile (instant GraphQL API)
 - **Authentication**: NextAuth.js (Auth.js)
 - **Styling**: Tailwind CSS + Radix UI
 - **Job Queue**: pg-boss
 - **Payments**: Stripe
 - **Email**: IMAP/SMTP (Nodemailer)
 - **TypeScript**: Full type safety
+- **Icons**: Lucide React
+
+## 🔌 PostGraphile GraphQL API
+
+Yentral now includes PostGraphile integration for instant GraphQL API generation from your PostgreSQL database.
+
+### Quick Start
+
+Start PostGraphile server:
+```bash
+pnpm postgraphile
+```
+
+Access GraphiQL interface at: `http://localhost:5000/graphiql`
+
+### Features
+
+- 🚀 **Instant GraphQL API** - Auto-generated from database schema
+- 🎨 **GraphiQL Interface** - Interactive API explorer
+- 📡 **Real-time Subscriptions** - WebSocket support for live updates
+- 👀 **Schema Watching** - Hot reload on database changes
+- 🔐 **RLS Support** - Respects PostgreSQL row-level security
+
+### Documentation
+
+See [docs/POSTGRAPHILE.md](./docs/POSTGRAPHILE.md) for complete setup and usage guide.
+
+### Integration Options
+
+**CLI Mode** (standalone server):
+```bash
+pnpm postgraphile
+```
+
+**Programmatic Mode** (with Express):
+```typescript
+import { createPostGraphileMiddleware } from './scripts/postgraphile-server';
+app.use(createPostGraphileMiddleware());
+```
+
+See [examples/express-postgraphile.ts](./examples/express-postgraphile.ts) for integration examples.
 - **Icons**: Lucide React
 
 ## 🗺️ Roadmap
