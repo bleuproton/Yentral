@@ -81,14 +81,6 @@ const middleware = postgraphile(DATABASE_URL, SCHEMA, {
     // Custom PostgreSQL settings can be added here
     statement_timeout: '30000', // 30 seconds
   },
-  
-  // Add request-level pg settings (useful for multi-tenancy)
-  additionalGraphQLContextFromRequest: async (req) => {
-    // You can add custom logic here, e.g., setting tenant context
-    return {
-      // Add any request-specific context
-    };
-  },
 });
 
 // Create HTTP server

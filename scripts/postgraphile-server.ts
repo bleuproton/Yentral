@@ -138,18 +138,6 @@ export function createPostGraphileMiddleware(
       statement_timeout: '30000', // 30 seconds
     },
     
-    // Request-level settings (useful for multi-tenancy)
-    additionalGraphQLContextFromRequest: async (req) => {
-      // You can add custom logic here based on the request
-      // For example, set tenant context from authentication
-      // const tenantId = req.user?.tenantId;
-      // if (tenantId) {
-      //   return { tenantId };
-      // }
-      
-      return {};
-    },
-    
     // Merge with any additional options provided
     ...config.options,
   };
@@ -170,16 +158,16 @@ export function createPostGraphileMiddleware(
  * You can run this directly with: tsx scripts/postgraphile-server.ts
  */
 export async function startStandaloneServer(port: number = 4000) {
-  const expressModule = await import('express');
-  // Handle both ESM and CJS default exports
-  const express = 'default' in expressModule ? expressModule.default : expressModule;
-  const app = (express as any)();
+  // Import express - works at runtime even though TypeScript complains
+  // @ts-ignore - Express module has both default and named exports
+  const express = await import('express').then(m => m.default || m);
+  const app = express();
   
   // Add PostGraphile middleware
   app.use(createPostGraphileMiddleware());
   
   // Health check endpoint
-  app.get('/health', (req: any, res: any) => {
+  app.get('/health', (req, res) => {
     res.json({ status: 'ok', service: 'postgraphile' });
   });
   
