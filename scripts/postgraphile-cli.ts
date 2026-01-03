@@ -28,19 +28,15 @@
 import { postgraphile } from 'postgraphile';
 import { createServer } from 'http';
 import * as dotenv from 'dotenv';
+import { validateDatabaseUrl, getPostGraphilePort, getPostGraphileSchema } from './postgraphile-utils.js';
 
 // Load environment variables
 dotenv.config();
 
 // Configuration
-const DATABASE_URL = process.env.DATABASE_URL;
-const PORT = parseInt(process.env.POSTGRAPHILE_PORT || '5000', 10);
-const SCHEMA = process.env.POSTGRAPHILE_SCHEMA || 'public';
-
-if (!DATABASE_URL) {
-  console.error('❌ ERROR: DATABASE_URL environment variable is required');
-  process.exit(1);
-}
+const DATABASE_URL = validateDatabaseUrl();
+const PORT = getPostGraphilePort(5000);
+const SCHEMA = getPostGraphileSchema('public');
 
 console.log('🚀 Starting PostGraphile...');
 console.log(`📊 Database Schema: ${SCHEMA}`);

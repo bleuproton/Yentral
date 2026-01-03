@@ -34,6 +34,7 @@
 import { postgraphile, PostGraphileOptions } from 'postgraphile';
 import type { RequestHandler } from 'express';
 import * as dotenv from 'dotenv';
+import { validateDatabaseUrl, getPostGraphileSchema } from './postgraphile-utils.js';
 
 // Load environment variables
 dotenv.config();
@@ -88,18 +89,14 @@ export interface PostGraphileConfig {
 export function createPostGraphileMiddleware(
   config: PostGraphileConfig = {}
 ): RequestHandler {
-  // Get database URL
-  const databaseUrl = config.databaseUrl || process.env.DATABASE_URL;
-  
-  if (!databaseUrl) {
-    throw new Error('DATABASE_URL is required for PostGraphile. Set it in your .env file or pass it in the config.');
-  }
+  // Get database URL with validation
+  const databaseUrl = validateDatabaseUrl(config.databaseUrl);
   
   // Determine environment
   const isDevelopment = process.env.NODE_ENV !== 'production';
   
   // Set defaults based on environment
-  const schema = config.schema || process.env.POSTGRAPHILE_SCHEMA || 'public';
+  const schema = config.schema || getPostGraphileSchema('public');
   const graphiql = config.graphiql !== undefined ? config.graphiql : isDevelopment;
   const subscriptions = config.subscriptions !== undefined ? config.subscriptions : true;
   const watchPg = config.watchPg !== undefined ? config.watchPg : isDevelopment;
@@ -173,14 +170,16 @@ export function createPostGraphileMiddleware(
  * You can run this directly with: tsx scripts/postgraphile-server.ts
  */
 export async function startStandaloneServer(port: number = 4000) {
-  const express = await import('express');
-  const app = express.default();
+  const expressModule = await import('express');
+  // Handle both ESM and CJS default exports
+  const express = 'default' in expressModule ? expressModule.default : expressModule;
+  const app = (express as any)();
   
   // Add PostGraphile middleware
   app.use(createPostGraphileMiddleware());
   
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', (req: any, res: any) => {
     res.json({ status: 'ok', service: 'postgraphile' });
   });
   
@@ -200,7 +199,8 @@ export async function startStandaloneServer(port: number = 4000) {
 }
 
 // If this file is run directly, start the standalone server
-if (require.main === module) {
+const isMainModule = process.argv[1] && process.argv[1].endsWith('postgraphile-server.ts');
+if (isMainModule) {
   const port = parseInt(process.env.POSTGRAPHILE_PORT || '4000', 10);
   startStandaloneServer(port).catch((error) => {
     console.error('Failed to start PostGraphile server:', error);
